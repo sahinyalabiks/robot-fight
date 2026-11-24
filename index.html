@@ -56,8 +56,6 @@
   #energyFill { height:100%; width:100%; background:linear-gradient(#b07cff, #8b5cf6); }
   #energy::after { content:""; position:absolute; inset:0;
     background:repeating-linear-gradient(90deg, transparent 0 calc(10% - 2px), var(--bg) calc(10% - 2px) 10%); }
-  .card .cd { font-size:12px; font-weight:800; color:#5b6b82; background:#e8edf4; border-radius:10px; padding:3px 9px; white-space:nowrap; }
-  .card .cd + .cost { margin-left:0; } .card .cd { margin-left:auto; }
   #btnThrust { display:none; }   /* thrusters are shelved: CFG.thrustersEnabled brings the button back */
   .ability.tap .knob { width:70px; height:70px; transition:transform .06s; }
   .ability.tap.pressed .knob { transform:scale(.88); }
@@ -76,28 +74,52 @@
   .ability.active .knob { width:60px; height:60px; }
   .ability.active .knob span { font-size:9px; }
 
-  /* Draft screen */
+  /* Draft screen: a grid of collectible-style cards + a detail panel for the selected one */
   #draft { position:absolute; inset:0; z-index:9; background:var(--bg); display:flex; flex-direction:column; align-items:stretch;
-    padding:calc(14px + env(safe-area-inset-top)) 14px calc(12px + env(safe-area-inset-bottom)); gap:7px; overflow-y:auto; }
+    padding:calc(12px + env(safe-area-inset-top)) 12px calc(12px + env(safe-area-inset-bottom)); gap:8px; overflow:hidden; }
   #draft.hidden { display:none; }
-  #draft h2 { margin:0; text-align:center; font-size:24px; letter-spacing:.06em; }
-  #draft p { margin:0; text-align:center; font-size:13px; font-weight:600; color:#6b778a; }
-  #draftStatus { min-height:20px; font-size:15px !important; color:var(--ink) !important; font-weight:800 !important; letter-spacing:.04em; }
-  #cards { display:flex; flex-direction:column; gap:7px; margin:2px 0; }
-  .card { position:relative; background:#fff; border:2px solid #dde3ec; border-radius:12px; padding:8px 12px;
-    box-shadow:0 2px 6px rgba(40,60,90,.08); transition:transform .08s, opacity .15s, border-color .15s; }
-  .card .top { display:flex; align-items:center; gap:8px; margin-bottom:4px; }
-  .card .name { font-size:16px; font-weight:800; letter-spacing:.04em; }
-  .card .how { font-size:10px; font-weight:700; letter-spacing:.08em; color:#8a96a8; }
-  .card .cost { margin-left:auto; font-size:12px; font-weight:800; color:#7c4ddb; background:#efe7ff; border-radius:10px; padding:3px 9px; white-space:nowrap; }
-  .card .desc { font-size:12.5px; line-height:1.3; color:#536074; }
-  .card .owner { display:none; position:absolute; top:-9px; right:12px; font-size:10px; font-weight:800; letter-spacing:.1em; color:#fff; border-radius:8px; padding:2px 8px; }
-  #cards.myturn .card:not(.taken) { border-color:var(--blue); }
-  #cards.myturn .card:not(.taken):active { transform:scale(.97); }
-  #cards:not(.myturn) .card:not(.taken) { opacity:.6; }
+  #draftHead { display:flex; flex-direction:column; gap:3px; }
+  #draft h2 { margin:0; text-align:center; font-size:22px; letter-spacing:.06em; }
+  #draft p { margin:0; text-align:center; font-size:12px; font-weight:600; color:#6b778a; }
+  #draftStatus { min-height:19px; font-size:15px !important; color:var(--ink) !important; font-weight:800 !important; letter-spacing:.04em; }
+  #cards { flex:1 1 auto; min-height:0; overflow-y:auto; touch-action:pan-y; display:grid; grid-template-columns:repeat(3, 1fr);
+    gap:13px 10px; align-content:start; padding:9px 7px 6px; }
+  .n-weapon { --n1:#ffb866; --n2:#f2711c; --nb:#d85a0a; }
+  .n-enhancement { --n1:#63e2d1; --n2:#12a594; --nb:#0b8577; }
+  .n-deployable { --n1:#f9a3d6; --n2:#d6409f; --nb:#b02a80; }
+  .card { position:relative; background:#fff; border:3px solid var(--nb); border-radius:13px; padding-bottom:6px;
+    box-shadow:0 3px 0 var(--nb), 0 5px 9px rgba(40,60,90,.16); transition:transform .08s; }
+  .card .art { height:52px; border-radius:9px 9px 0 0; background:linear-gradient(160deg, var(--n1), var(--n2));
+    display:flex; align-items:center; justify-content:center; }
+  .card .art svg { width:42px; height:42px; filter:drop-shadow(0 2px 0 rgba(0,0,0,.18)); }
+  .card .name { text-align:center; font-size:13px; font-weight:900; letter-spacing:.03em; margin:5px 2px 4px; }
+  .card .tags { display:flex; justify-content:center; gap:3px; flex-wrap:wrap; padding:0 3px; }
+  .chip { font-size:8.5px; font-weight:800; letter-spacing:.06em; border-radius:6px; padding:2px 5px; background:#e8edf4; color:#5b6b82; white-space:nowrap; }
+  .chip.nat { background:var(--n2); color:#fff; }
+  .card .badge { position:absolute; top:-9px; left:-8px; min-width:28px; height:28px; padding:0 5px; border-radius:14px; background:#8b5cf6;
+    border:2.5px solid #fff; box-shadow:0 2px 4px rgba(60,30,120,.35); color:#fff; font-size:14px; font-weight:900;
+    display:flex; align-items:baseline; justify-content:center; line-height:23px; }
+  .card .badge small { font-size:8px; font-weight:800; margin-left:1px; }
+  .card .cdchip { position:absolute; top:4px; right:4px; font-size:9px; font-weight:800; color:#fff; background:rgba(28,37,51,.72); border-radius:7px; padding:1px 5px; }
+  .card .owner { display:none; position:absolute; top:20px; left:50%; transform:translateX(-50%) rotate(-7deg); font-size:13px; font-weight:900;
+    letter-spacing:.1em; color:#fff; border-radius:8px; padding:2px 11px; border:2px solid #fff; z-index:1; }
+  .card.sel { transform:translateY(-4px); outline:3px solid var(--ink); outline-offset:2px; }
   .card.taken .owner { display:block; }
-  .card.mine { border-color:var(--blue); background:#eef5ff; } .card.mine .owner { background:var(--blue); }
-  .card.theirs { border-color:var(--red); background:#fff0ef; } .card.theirs .owner { background:var(--red); }
+  .card.taken .art, .card.taken .name, .card.taken .tags, .card.taken .badge { opacity:.35; filter:grayscale(.8); }
+  .card.mine { border-color:var(--blue); box-shadow:0 3px 0 var(--blue); } .card.mine .owner { background:var(--blue); }
+  .card.theirs { border-color:var(--red); box-shadow:0 3px 0 var(--red); } .card.theirs .owner { background:var(--red); }
+  #detail { flex:0 0 auto; background:#fff; border-radius:14px; padding:11px 13px 12px; box-shadow:0 2px 8px rgba(40,60,90,.12); min-height:142px;
+    display:flex; flex-direction:column; gap:5px; }
+  #detail .dtop { display:flex; align-items:center; gap:6px; flex-wrap:wrap; }
+  #detail .dname { font-size:17px; font-weight:900; letter-spacing:.03em; margin-right:2px; }
+  #detail .chip { font-size:9.5px; padding:3px 7px; }
+  #detail .dstats { font-size:12px; font-weight:800; color:#7c4ddb; }
+  #detail .ddesc { font-size:13px; line-height:1.35; color:#536074; flex:1; }
+  #detail .hint { margin:auto; font-size:13px; font-weight:600; color:#8a96a8; }
+  #pickBtn { width:100%; height:44px; border:0; border-radius:12px; background:var(--blue); color:#fff; font:800 15px/1 inherit; font-family:inherit;
+    letter-spacing:.06em; box-shadow:0 3px 0 #1f5fd0; }
+  #pickBtn:active { transform:translateY(2px); box-shadow:0 1px 0 #1f5fd0; }
+  #pickBtn:disabled { background:var(--muted); color:#7a8699; box-shadow:none; transform:none; }
 
   /* Overlay */
   #overlay { position:absolute; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:center;
@@ -120,15 +142,20 @@
     <div class="ability" id="btnFlame"><div class="base"></div><div class="knob"><span>FLAME</span></div></div>
     <div class="ability tap" id="btnSlam"><div class="knob"><span>SLAM</span></div></div>
     <div class="ability tap" id="btnShield"><div class="knob"><span>SHIELD</span></div></div>
+    <div class="ability tap" id="btnMine"><div class="knob"><span>MINE</span></div></div>
+    <div class="ability tap" id="btnTurret"><div class="knob"><span>TURRET</span></div></div>
     <div class="ability" id="btnGatling"><div class="base"></div><div class="knob"><span>GATLING</span></div></div>
     <div class="ability" id="btnMortar"><div class="base"></div><div class="knob"><span>MORTAR</span></div></div>
     <div class="ability" id="btnLaser"><div class="base"></div><div class="knob"><span>LASER</span></div></div>
   </div>
   <div id="draft" class="hidden">
-    <h2>PICK ABILITIES</h2>
-    <p id="draftOrder"></p>
+    <div id="draftHead">
+      <h2>PICK ABILITIES</h2>
+      <p id="draftOrder"></p>
+      <p id="draftStatus"></p>
+    </div>
     <div id="cards"></div>
-    <p id="draftStatus"></p>
+    <div id="detail"></div>
   </div>
   <div id="overlay"><h1 id="ovTitle">ROBOT FIGHT</h1><p id="ovSub">TAP TO START</p></div>
 </div>
@@ -174,7 +201,21 @@ const CFG = {
   gatlingSpread: 3,         // degrees either side
   gatlingAimLen: 3.5,       // aim line length (laser's is 9)
   // Cooldowns in seconds, on top of the energy cost (0 = energy only). Starts when the ability is used.
-  cooldown: { laser: 0, flame: 0, slam: 0, shield: 15, mortar: 0, gatling: 0 },
+  // Mine: dropped where you stand, arms after a moment, explodes when the enemy rolls over it
+  mineCost: 20,
+  mineDamage: 20,
+  mineArm: 1,               // seconds before it becomes live
+  mineMax: 2,               // per robot; dropping another removes the oldest
+  mineTrigger: 0.45,        // extra reach beyond the robot's radius
+  // Turret: dropped where you stand, shoots gatling-strength bullets on its own for a while
+  turretCost: 40,
+  turretLife: 8,
+  turretInterval: 0.6,      // seconds between shots
+  turretSpread: 6,        // degrees either side
+  // Spikes: passive, every robot-to-robot bump hurts the other robot
+  spikesDamage: 10,
+  // (Ricochet: passive, your laser / gatling / turret shots bounce off a wall once. No numbers to tune.)
+  cooldown: { laser: 0, flame: 0, slam: 0, shield: 15, mortar: 0, gatling: 0, mine: 3, turret: 0 },
   // Draft: abilities each side ends up with
   picksEach: 3,
   // Durability: passive, raises max HP
@@ -286,6 +327,15 @@ function makeRobot(color, isPlayer) {
     new THREE.MeshLambertMaterial({ color: 0xffffff }));
   cap.position.y = CFG.robotH / 2 + 0.04; mesh.add(cap);
   scene.add(mesh);
+  const spikes = new THREE.Group(); spikes.visible = false; mesh.add(spikes);
+  {
+    const g = new THREE.ConeGeometry(0.13, 0.32, 6), mt = new THREE.MeshLambertMaterial({ color: 0xf2f5f9 });
+    for (let i = 0; i < 10; i++) {
+      const pivot = new THREE.Object3D(); pivot.rotation.y = i / 10 * Math.PI * 2;
+      const c = new THREE.Mesh(g, mt); c.rotation.z = -Math.PI / 2; c.position.x = CFG.robotR + 0.13; c.castShadow = true;
+      pivot.add(c); spikes.add(pivot);
+    }
+  }
   const shield = new THREE.Mesh(new THREE.SphereGeometry(1.1, 24, 16),
     new THREE.MeshBasicMaterial({ color: isPlayer ? 0x7fb4ff : 0xff8f8a, transparent: true, opacity: 0.35, depthWrite: false }));
   shield.visible = false; mesh.add(shield);
@@ -294,7 +344,7 @@ function makeRobot(color, isPlayer) {
     new THREE.MeshBasicMaterial({ color: isPlayer ? 0x7fd0ff : 0xffb37a }));
   flame.visible = false; scene.add(flame);
 
-  return { isPlayer, color, mesh, mat, flame, shield, shieldT: 0, abilities: new Set(), x: 0, z: 0, vx: 0, vz: 0, hp: CFG.maxHp,
+  return { isPlayer, color, mesh, mat, flame, shield, spikes, shieldT: 0, abilities: new Set(), x: 0, z: 0, vx: 0, vz: 0, hp: CFG.maxHp,
     cd: 0, charge: 1, regenWait: 0, burst: null, thrust: null, thrusting: false, flash: 0,
     y: 0, fuel: 1, fuelWait: 0, fireOn: false, fireDir: null, firing: false, fireAcc: 0, slamCd: 0, slamT: -1 };
 }
@@ -336,10 +386,11 @@ const laserGeo = new THREE.BoxGeometry(0.14, 0.14, CFG.laserLen);
 const laserMats = { true: new THREE.MeshBasicMaterial({ color: 0x4a9bff }), false: new THREE.MeshBasicMaterial({ color: 0xff5a52 }) };
 const lasers = [];
 const bulletGeo = new THREE.BoxGeometry(0.2, 0.2, 0.42);
-function fireShot(r, dx, dz, bullet) {      // bullet = gatling round, otherwise a laser shot
+function fireShot(r, dx, dz, bullet, from) {      // bullet = gatling round, otherwise a laser shot; from = turret origin
   const m = new THREE.Mesh(bullet ? bulletGeo : laserGeo, laserMats[r.isPlayer]);
-  const off = CFG.robotR + (bullet ? 0.21 : CFG.laserLen / 2), spd = bullet ? CFG.gatlingSpeed : CFG.laserSpeed;
-  const s = { m, owner: r, x: r.x + dx * off, z: r.z + dz * off, vx: dx * spd, vz: dz * spd,
+  const o = from || { x: r.x, z: r.z, rad: CFG.robotR };
+  const off = o.rad + (bullet ? 0.21 : CFG.laserLen / 2), spd = bullet ? CFG.gatlingSpeed : CFG.laserSpeed;
+  const s = { m, owner: r, x: o.x + dx * off, z: o.z + dz * off, vx: dx * spd, vz: dz * spd,
     dmg: bullet ? CFG.gatlingDamage : CFG.laserDamage };
   m.position.set(s.x, CFG.robotH * 0.6, s.z); m.rotation.y = Math.atan2(dx, dz);
   scene.add(m); lasers.push(s);
@@ -402,6 +453,74 @@ function hurt(e, amt, flash, continuous) {
   el.style.fontSize = (17 + Math.min(amt, 40) * 0.45) + 'px';     // bigger hits, bigger numbers
   el.addEventListener('animationend', () => el.remove());
   stage.appendChild(el);
+}
+// ---------- Mines ----------
+const mineGeo = new THREE.CylinderGeometry(0.36, 0.42, 0.14, 20), mineDotGeo = new THREE.SphereGeometry(0.12, 10, 8);
+const mines = [];
+function removeMine(mn) { scene.remove(mn.m); mn.m.material.dispose(); mn.dot.material.dispose(); }
+function startMine(r) {
+  if (r.energy < CFG.mineCost || !ready(r, 'mine')) return false;
+  r.energy -= CFG.mineCost; startCd(r, 'mine');
+  const own = mines.filter(mn => mn.owner === r);
+  if (own.length >= CFG.mineMax) { removeMine(own[0]); mines.splice(mines.indexOf(own[0]), 1); }
+  const m = new THREE.Mesh(mineGeo, new THREE.MeshLambertMaterial({ color: r.color, transparent: true, opacity: 0.4 }));
+  const dot = new THREE.Mesh(mineDotGeo, new THREE.MeshBasicMaterial({ color: 0x1c2533 }));
+  dot.position.y = 0.1; m.add(dot); m.position.set(r.x, 0.07, r.z); scene.add(m);
+  mines.push({ owner: r, x: r.x, z: r.z, t: 0, m, dot });
+  return true;
+}
+function stepMines(dt, time) {
+  for (let i = mines.length - 1; i >= 0; i--) {
+    const mn = mines[i]; mn.t += dt;
+    const armed = mn.t >= CFG.mineArm, e = enemyOf(mn.owner);
+    mn.m.material.opacity = armed ? 1 : 0.4;                                   // faint until it is live
+    mn.dot.material.color.setHex(armed && Math.sin(time * 10) > 0 ? 0xffd60a : 0x1c2533);   // live mines blink
+    if (armed && e.y < 0.4 && Math.hypot(e.x - mn.x, e.z - mn.z) < CFG.robotR + CFG.mineTrigger) {
+      addRing(mn.x, mn.z, mn.owner.color, 1.6);
+      if (e.shieldT <= 0) hurt(e, CFG.mineDamage, 1.5);                        // a shield sets it off harmlessly
+      removeMine(mn); mines.splice(i, 1);
+    }
+  }
+}
+
+// Where a robot will be in t seconds if nothing disturbs it (constant speed, bouncing off the walls)
+function foldAxis(v, m) { v = (((v + m) % (4 * m)) + 4 * m) % (4 * m); return (v > 2 * m ? 4 * m - v : v) - m; }
+function predictPos(r, t) {
+  return { x: foldAxis(r.x + r.vx * t, HW - CFG.robotR), z: foldAxis(r.z + r.vz * t, HD - CFG.robotR) };
+}
+
+// ---------- Turrets ----------
+const turretBaseGeo = new THREE.CylinderGeometry(0.34, 0.4, 0.5, 16), turretBarrelGeo = new THREE.BoxGeometry(0.14, 0.14, 0.6);
+turretBarrelGeo.translate(0, 0, 0.3);
+const turrets = [];
+function removeTurret(t) { scene.remove(t.m); t.m.material.dispose(); }
+function startTurret(r) {
+  if (r.energy < CFG.turretCost || !ready(r, 'turret')) return false;
+  r.energy -= CFG.turretCost; startCd(r, 'turret');
+  const old = turrets.findIndex(t => t.owner === r);            // one turret per robot: a new one replaces the old
+  if (old >= 0) { removeTurret(turrets[old]); turrets.splice(old, 1); }
+  const m = new THREE.Mesh(turretBaseGeo, new THREE.MeshLambertMaterial({ color: r.color })); m.castShadow = true;
+  const barrel = new THREE.Mesh(turretBarrelGeo, new THREE.MeshLambertMaterial({ color: 0x3a4252 })); barrel.position.y = 0.2; m.add(barrel);
+  m.position.set(r.x, 0.25, r.z); scene.add(m);
+  turrets.push({ owner: r, x: r.x, z: r.z, t: 0, shotT: 0.5, m, barrel });
+  return true;
+}
+function stepTurrets(dt, time) {
+  for (let i = turrets.length - 1; i >= 0; i--) {
+    const t = turrets[i]; t.t += dt;
+    if (t.t >= CFG.turretLife) { removeTurret(t); turrets.splice(i, 1); continue; }
+    t.m.visible = CFG.turretLife - t.t > 1 || Math.sin(time * 30) > 0;       // blinks before it expires
+    const e = enemyOf(t.owner), lead = Math.hypot(e.x - t.x, e.z - t.z) / CFG.gatlingSpeed;
+    const fut = predictPos(e, lead);                                         // leads the target, wall bounces included
+    const ang = Math.atan2(fut.x - t.x, fut.z - t.z);
+    t.barrel.rotation.y = ang;
+    t.shotT -= dt;
+    if (t.shotT <= 0) {
+      t.shotT = CFG.turretInterval;
+      const a = ang + (Math.random() * 2 - 1) * CFG.turretSpread * Math.PI / 180;
+      fireShot(t.owner, Math.sin(a), Math.cos(a), true, { x: t.x, z: t.z, rad: 0.45 });
+    }
+  }
 }
 // Per-ability cooldowns
 function ready(r, id) { return !(r.cdl[id] > 0); }
@@ -527,6 +646,8 @@ function makeTap(el, onTap) {
 }
 const slamBtn = makeTap(document.getElementById('btnSlam'), () => state === 'playing' && startSlam(player));
 const shieldBtn = makeTap(document.getElementById('btnShield'), () => state === 'playing' && startShield(player));
+const mineBtn = makeTap(document.getElementById('btnMine'), () => state === 'playing' && startMine(player));
+const turretBtn = makeTap(document.getElementById('btnTurret'), () => state === 'playing' && startTurret(player));
 laserStick.canStart = () => state === 'playing' && player.energy >= CFG.laserCost && !player.burst && ready(player, 'laser');
 thrustStick.canStart = () => state === 'playing' && player.charge >= CFG.thrustMinStart;
 // Screen right = world +x, screen down = world +z (camera looks from +z)
@@ -539,7 +660,7 @@ laserStick.onRelease = s => {
 document.addEventListener('contextmenu', e => e.preventDefault());
 
 // ---------- Bot brain ----------
-const ai = { gunning: false, gunErr: 0, mortarWait: 1, shieldScan: 0, slamScan: 0, fireWait: 1, thrustT: 0, nextThrust: 2, scan: 0, dir: { x: 0, z: 0 } };
+const ai = { dropWait: 2, gunning: false, gunErr: 0, mortarWait: 1, shieldScan: 0, slamScan: 0, fireWait: 1, thrustT: 0, nextThrust: 2, scan: 0, dir: { x: 0, z: 0 } };
 function botThink(dt) {
   // Laser: lead the target a bit, with some aim error
   const has = id => bot.abilities.has(id);
@@ -560,6 +681,13 @@ function botThink(dt) {
       }
       if (threat && Math.random() < 0.6) startShield(bot);
     }
+  }
+  // Mine / Turret: drop them now and then, keeping some energy back
+  ai.dropWait -= dt;
+  if (ai.dropWait <= 0) {
+    ai.dropWait = 0.5;
+    if (has('turret') && bot.energy >= CFG.turretCost + 15 && !turrets.some(t => t.owner === bot)) { startTurret(bot); ai.dropWait = 2; }
+    else if (has('mine') && bot.energy >= CFG.mineCost + 25 && ready(bot, 'mine') && Math.random() < 0.3) { startMine(bot); ai.dropWait = 2 + Math.random() * 3; }
   }
   // Mortar: aim where the player will be when the shell lands (wall bounces included), with some error
   if (has('mortar') && bot.energy >= CFG.mortarCost + 10 && ready(bot, 'mortar')) {
@@ -642,6 +770,11 @@ let state = 'menu';
 function reset() {
   for (const s of lasers) scene.remove(s.m);
   lasers.length = 0;
+  for (const mn of mines) removeMine(mn);
+  mines.length = 0;
+  for (const t of turrets) removeTurret(t);
+  turrets.length = 0;
+  for (const r of robots) r.spikes.visible = r.abilities.has('spikes');
   for (const s of shells) removeShell(s);
   shells.length = 0;
   for (const p of puffs) { p.m.visible = false; puffPool.push(p.m); }
@@ -758,6 +891,8 @@ function collideRobots() {
   a.x -= nx * push; a.z -= nz * push; b.x += nx * push; b.z += nz * push;
   const rel = (b.vx - a.vx) * nx + (b.vz - a.vz) * nz;
   if (rel < 0) {                        // equal-mass elastic bounce: swap normal components
+    for (const [r, o] of [[a, b], [b, a]])      // Spikes: the bump itself hurts
+      if (r.abilities.has('spikes') && o.shieldT <= 0) hurt(o, CFG.spikesDamage, 1);
     a.vx += rel * nx; a.vz += rel * nz; b.vx -= rel * nx; b.vz -= rel * nz;
     // never let a bounce leave a robot stalled: keep them separating at base speed
     for (const [r, sg] of [[a, -1], [b, 1]]) {
@@ -774,6 +909,11 @@ function stepLasers(dt) {
     s.x += s.vx * dt; s.z += s.vz * dt;
     const e = enemyOf(s.owner);
     let dead = Math.abs(s.x) > HW || Math.abs(s.z) > HD;
+    if (dead && !s.bounced && s.owner.abilities.has('ricochet')) {     // Ricochet: one wall bounce
+      if (Math.abs(s.x) > HW) { s.vx = -s.vx; s.x = Math.sign(s.x) * HW; }
+      if (Math.abs(s.z) > HD) { s.vz = -s.vz; s.z = Math.sign(s.z) * HD; }
+      s.bounced = true; s.m.rotation.y = Math.atan2(s.vx, s.vz); dead = false;
+    }
     if (!dead && Math.hypot(e.x - s.x, e.z - s.z) < CFG.robotR + 0.2) {
       dead = true;
       if (e.shieldT <= 0) hurt(e, s.dmg, 1);
@@ -812,13 +952,50 @@ const ABILITIES = {
             desc: `Makes you invulnerable for ${CFG.shieldTime} seconds.` },
   gatling: { name: 'Gatling', weapon: true, how: 'HOLD AND DRAG', cost: CFG.gatlingCost + ' / shot', btn: 'btnGatling',
             desc: `Streams ${CFG.gatlingRate} bullets per second with unlimited range, ${CFG.gatlingDamage} damage each. Its aim line is short, so it is harder to aim.` },
+  mine:   { name: 'Mine', how: 'TAP', cost: CFG.mineCost, btn: 'btnMine',
+            desc: `Drops a mine where you are. It arms after ${CFG.mineArm} second and deals ${CFG.mineDamage} damage when the enemy rolls over it. Up to ${CFG.mineMax} at once.` },
+  turret: { name: 'Turret', weapon: true, how: 'TAP', cost: CFG.turretCost, btn: 'btnTurret',
+            desc: `Drops a turret where you are. For ${CFG.turretLife} seconds it shoots at the enemy on its own, ${CFG.gatlingDamage} damage per hit.` },
+  spikes: { name: 'Spikes', how: 'PASSIVE', cost: null, btn: null,
+            desc: `Every time the two robots bump into each other, the enemy takes ${CFG.spikesDamage} damage. Always on, nothing to press.` },
+  ricochet: { name: 'Ricochet', how: 'PASSIVE', cost: null, btn: null,
+            desc: `Your Laser, Gatling and Turret shots bounce off a wall once instead of disappearing. Does nothing without one of those.` },
   durability: { name: 'Durability', how: 'PASSIVE', cost: null, btn: null,     // passive: no button, no energy
             desc: `Adds ${Math.round(CFG.durabilityBonus * 100)}% HP for the whole match (${CFG.maxHp} → ${Math.round(CFG.maxHp * (1 + CFG.durabilityBonus))}). Always on, nothing to press.` },
   mortar: { name: 'Mortar', weapon: true, how: 'DRAG TO AIM OR TAP', cost: CFG.mortarCost, btn: 'btnMortar',
             desc: `Lobs a slow shell that explodes where it lands for ${CFG.mortarDamage} damage in an area. Pull further to throw further.` }
 };
 for (const id in ABILITIES) if (ABILITIES[id].btn) document.getElementById(ABILITIES[id].btn).style.display = 'none';   // shown after the draft
-const dui = { root: document.getElementById('draft'), cards: document.getElementById('cards'),
+// Nature (what kind of thing it is), short control type, and the number shown on the card's energy badge
+const NATURE = { weapon: 'WEAPON', enhancement: 'ENHANCEMENT', deployable: 'DEPLOYABLE' };
+const CARD = {
+  laser: ['weapon', 'AIM', CFG.laserCost, ''],        flame: ['weapon', 'HOLD', CFG.flameCost, '/s'],
+  slam: ['weapon', 'TAP', CFG.slamCost, ''],          gatling: ['weapon', 'HOLD', CFG.gatlingCost, '/shot'],
+  mortar: ['weapon', 'AIM', CFG.mortarCost, ''],      shield: ['enhancement', 'TAP', CFG.shieldCost, ''],
+  spikes: ['enhancement', 'PASSIVE', null, ''],       ricochet: ['enhancement', 'PASSIVE', null, ''],
+  durability: ['enhancement', 'PASSIVE', null, ''],   mine: ['deployable', 'TAP', CFG.mineCost, ''],
+  turret: ['deployable', 'TAP', CFG.turretCost, '']
+};
+for (const id in CARD) { const a = ABILITIES[id]; [a.nature, a.type, a.costNum, a.costUnit] = CARD[id]; }
+// Simple line-art icons (48x48, white on the card's colour)
+const starPts = (n, R, r) => Array.from({ length: n * 2 }, (_, i) => {
+  const a = i * Math.PI / n - Math.PI / 2, q = i % 2 ? r : R; return (24 + Math.cos(a) * q).toFixed(1) + ',' + (24 + Math.sin(a) * q).toFixed(1); }).join(' ');
+const ICON = {
+  laser: '<path d="M9 39 L39 9" stroke-width="5" stroke-dasharray="9 7"/>',
+  flame: '<path fill="#fff" stroke="none" d="M24 5c5 9 13 13 11 24-1 8-7 13-11 13s-10-4-11-11c-1-6 4-9 5-14 3 2 6-4 6-12z"/><path fill="#f2711c" stroke="none" d="M24 24c3 4 5 6 4 10-1 3-2 4-4 4s-4-2-4-5 3-5 4-9z"/>',
+  slam: '<path d="M24 5v19M15 16l9 9 9-9" stroke-width="5"/><path d="M9 36q15-8 30 0M4 43q20-10 40 0"/>',
+  shield: '<path fill="rgba(255,255,255,.3)" d="M24 6l14 6v11c0 9-7 15-14 19-7-4-14-10-14-19V12z"/><path d="M24 14v20" stroke-width="3"/>',
+  gatling: '<path d="M7 15h22M7 24h22M7 33h22" stroke-width="5"/><circle cx="38" cy="15" r="2.5" fill="#fff"/><circle cx="41" cy="24" r="2.5" fill="#fff"/><circle cx="38" cy="33" r="2.5" fill="#fff"/>',
+  mortar: '<path d="M7 40Q20 -4 35 27" stroke-dasharray="1 8" stroke-width="5"/><circle cx="37" cy="35" r="7" fill="rgba(255,255,255,.35)"/>',
+  mine: '<circle cx="24" cy="24" r="11" fill="rgba(255,255,255,.3)"/><path d="M24 6v5M24 37v5M6 24h5M37 24h5M11 11l4 4M33 33l4 4M37 11l-4 4M15 33l-4 4"/><circle cx="24" cy="24" r="3.5" fill="#fff"/>',
+  turret: '<path fill="rgba(255,255,255,.3)" d="M11 41l4-14h18l4 14z"/><path d="M24 27L37 10" stroke-width="6"/>',
+  spikes: `<polygon fill="rgba(255,255,255,.3)" points="${starPts(9, 20, 11)}"/><circle cx="24" cy="24" r="5" fill="#fff"/>`,
+  ricochet: '<path d="M6 41h36" stroke-width="5"/><path d="M8 10l15 28 15-24"/><path d="M30 13l9-1 1 9" stroke-width="3.5"/>',
+  durability: '<path fill="rgba(255,255,255,.3)" d="M24 41C9 30 6 20 13 13c5-4 11-1 11 4 0-5 6-8 11-4 7 7 4 17-11 28z"/><path d="M24 18v12M18 24h12" stroke-width="4"/>'
+};
+const svgIcon = id => `<svg viewBox="0 0 48 48" fill="none" stroke="#fff" stroke-width="4" stroke-linecap="round" stroke-linejoin="round">${ICON[id]}</svg>`;
+
+const dui = { root: document.getElementById('draft'), cards: document.getElementById('cards'), detail: document.getElementById('detail'),
   order: document.getElementById('draftOrder'), status: document.getElementById('draftStatus') };
 let draft = null;
 function startDraft() {
@@ -829,21 +1006,37 @@ function startDraft() {
   const count = who => order.filter(o => o === who).length;
   for (let who = first; order.length < CFG.picksEach * 2; who = who === 'you' ? 'bot' : 'you')
     if (count(who) < CFG.picksEach) order.push(who);
-  draft = { order, i: 0, owner: {} };
+  draft = { order, i: 0, owner: {}, sel: null };
   dui.order.textContent = (first === 'you' ? 'You pick first' : 'The bot picks first') +
     `, then ${first === 'you' ? 'the bot picks' : 'you pick'} 2, then one at a time. ${CFG.picksEach} each.`;
   dui.cards.innerHTML = '';
-  for (const id in ABILITIES) {
+  const natOrder = Object.keys(NATURE);        // group the grid: weapons, enhancements, deployables
+  for (const id of Object.keys(ABILITIES).sort((p, q) => natOrder.indexOf(ABILITIES[p].nature) - natOrder.indexOf(ABILITIES[q].nature))) {
     const a = ABILITIES[id], c = document.createElement('div');
-    c.className = 'card'; c.dataset.id = id;
-    c.innerHTML = `<span class="owner"></span><div class="top"><span class="name">${a.name}</span><span class="how">${a.how}</span>` +
-      (CFG.cooldown[id] > 0 ? `<span class="cd">⏱ ${CFG.cooldown[id]}s</span>` : '') +
-      (a.cost == null ? '<span class="cd">NO ENERGY</span>' : `<span class="cost">⚡ ${a.cost}</span>`) + `</div><div class="desc">${a.desc}</div>`;
-    c.addEventListener('click', () => { if (draft && draft.order[draft.i] === 'you' && !draft.owner[id]) draftPick('you', id); });
+    c.className = 'card n-' + a.nature; c.dataset.id = id;
+    c.innerHTML = '<span class="owner"></span>' +
+      (a.costNum != null ? `<span class="badge">${a.costNum}<small>${a.costUnit}</small></span>` : '') +
+      (CFG.cooldown[id] > 0 ? `<span class="cdchip">⏱ ${CFG.cooldown[id]}s</span>` : '') +
+      `<div class="art">${svgIcon(id)}</div><div class="name">${a.name}</div>` +
+      `<div class="tags"><span class="chip nat">${NATURE[a.nature]}</span><span class="chip">${a.type}</span></div>`;
+    c.addEventListener('click', () => { if (draft) { draft.sel = id; renderDetail(); } });   // tap = inspect; the PICK button confirms
     dui.cards.appendChild(c);
   }
   dui.root.classList.remove('hidden');
   draftNext();
+}
+// Detail panel: full description of the selected card and the button that picks it
+function renderDetail() {
+  const d = draft; if (!d) return;
+  for (const c of dui.cards.children) c.classList.toggle('sel', c.dataset.id === d.sel);
+  if (!d.sel) { dui.detail.innerHTML = '<div class="hint">Tap a card to see what it does.</div>'; return; }
+  const id = d.sel, a = ABILITIES[id], owner = d.owner[id], myTurn = d.order[d.i] === 'you';
+  const stats = (a.costNum != null ? `⚡ ${a.cost} energy` : 'No energy cost') + (CFG.cooldown[id] > 0 ? `  ·  ⏱ ${CFG.cooldown[id]}s cooldown` : '');
+  const label = owner ? (owner === 'you' ? 'YOURS' : 'TAKEN BY BOT') : myTurn ? 'PICK ' + a.name.toUpperCase() : d.i >= d.order.length ? 'DRAFT DONE' : 'WAIT FOR YOUR TURN';
+  dui.detail.innerHTML = `<div class="dtop n-${a.nature}"><span class="dname">${a.name}</span><span class="chip nat">${NATURE[a.nature]}</span>` +
+    `<span class="chip">${a.how}</span></div><div class="dstats">${stats}</div><div class="ddesc">${a.desc}</div>` +
+    `<button id="pickBtn" ${owner || !myTurn ? 'disabled' : ''}>${label}</button>`;
+  dui.detail.querySelector('#pickBtn').addEventListener('click', () => { if (draft && draft.order[draft.i] === 'you') draftPick('you', id); });
 }
 function draftPick(who, id) {
   // Hard cap: nobody can end up with more than CFG.picksEach abilities, whatever the pick order does
@@ -865,7 +1058,7 @@ function botChoice(left) {
 }
 function draftNext() {
   const d = draft, who = d.order[d.i], left = Object.keys(ABILITIES).filter(id => !d.owner[id]);
-  dui.cards.classList.toggle('myturn', who === 'you' && left.length > 1);
+  renderDetail();
   if (d.i >= d.order.length) { dui.status.textContent = 'FIGHT!'; setTimeout(() => d === draft && endDraft(), 900); return; }
   if (who === 'bot') {
     dui.status.textContent = 'Bot is picking…';
@@ -934,6 +1127,8 @@ function syncVisuals(time) {
   setBtn(slamBtn, 'slam', player.energy < CFG.slamCost || player.slamCd > 0);
   setBtn(shieldBtn, 'shield', player.energy < CFG.shieldCost);
   setBtn(mortarStick, 'mortar', player.energy < CFG.mortarCost);
+  setBtn(mineBtn, 'mine', player.energy < CFG.mineCost);
+  setBtn(turretBtn, 'turret', player.energy < CFG.turretCost);
   setBtn(gatlingStick, 'gatling', player.gunDry || (!gatlingStick.held && player.energy < CFG.gatlingCost));
   // Mortar aim preview: arc dots + blast zone at the landing point
   const aimM = state === 'playing' && mortarStick.held && mortarStick.mag > 0;
@@ -964,7 +1159,7 @@ function frame(now) {
     botThink(dt);
     stepRobot(player, dt); stepRobot(bot, dt);
     collideRobots();
-    stepLasers(dt); stepShells(dt);
+    stepLasers(dt); stepShells(dt); stepMines(dt, now / 1000); stepTurrets(dt, now / 1000);
     if (player.hp <= 0 || bot.hp <= 0) {
       state = 'over'; overlayShownAt = now;
       player.thrusting = bot.thrusting = false;
@@ -982,7 +1177,7 @@ reset();
 requestAnimationFrame(frame);
 
 // Debug handle for tuning from the console
-window.RoBotFight = { CFG, player, bot, lasers, get state() { return state; }, get draft() { return draft; } };
+window.RoBotFight = { CFG, player, bot, lasers, get state() { return state; }, get draft() { return draft; }, mines, turrets };
 })();
 </script>
 </body>
