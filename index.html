@@ -1,0 +1,472 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="theme-color" content="#e9edf3">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icon-192.png">
+<link rel="icon" href="icon-192.png">
+<title>RoBot Fight</title>
+<style>
+  :root { --blue:#2f7df6; --red:#f0443e; --bg:#e9edf3; --ink:#2a3342; --muted:#c9d1dc; }
+  * { box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+  html, body { margin:0; height:100%; background:#d5dbe4; overflow:hidden; overscroll-behavior:none;
+    font-family:-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; color:var(--ink);
+    user-select:none; -webkit-user-select:none; -webkit-touch-callout:none; touch-action:manipulation; }
+  #app { position:relative; height:100%; width:100%; max-width:calc(100vh * 0.6); margin:0 auto;
+    background:var(--bg); display:flex; flex-direction:column; overflow:hidden; }
+  @media (pointer:coarse), (max-width:600px) { #app { max-width:none; } html, body { background:var(--bg); } }
+
+  /* HUD */
+  #hud { flex:0 0 auto; height:calc(40px + env(safe-area-inset-top)); padding:calc(8px + env(safe-area-inset-top)) 14px 0;
+    display:flex; gap:12px; align-items:center; font-size:11px; font-weight:700; letter-spacing:.08em; }
+  .hp { flex:1; display:flex; align-items:center; gap:8px; }
+  .hp.bot { flex-direction:row-reverse; }
+  .hp .bar { flex:1; height:10px; border-radius:5px; background:var(--muted); overflow:hidden; }
+  .hp .fill { height:100%; width:100%; border-radius:5px; transition:width .12s linear; }
+  .hp.you .fill { background:var(--blue); }
+  .hp.bot .fill { background:var(--red); margin-left:auto; }
+
+  /* Arena viewport */
+  #stage { flex:1 1 auto; position:relative; min-height:0; }
+  #stage canvas { position:absolute; inset:0; width:100%; height:100%; display:block; }
+
+  /* Controls: bottom quarter */
+  #controls { flex:0 0 25%; position:relative; display:flex; justify-content:space-around; align-items:center;
+    padding-bottom:env(safe-area-inset-bottom); border-top:2px solid #d9dfe8; background:#eef1f6; }
+  .ability { position:relative; width:150px; height:150px; display:flex; align-items:center; justify-content:center; touch-action:none; }
+  .ability .base { position:absolute; inset:0; border-radius:50%; background:rgba(47,125,246,.10);
+    border:2px solid rgba(47,125,246,.35); opacity:0; transform:scale(.6); transition:opacity .1s, transform .1s; }
+  .ability.active .base { opacity:1; transform:scale(1); }
+  .ability .knob { --p:1; position:relative; width:86px; height:86px; border-radius:50%;
+    background:conic-gradient(var(--blue) calc(var(--p) * 360deg), var(--muted) 0);
+    display:flex; align-items:center; justify-content:center; will-change:transform;
+    box-shadow:0 3px 8px rgba(40,60,90,.18); }
+  .ability .knob::before { content:""; position:absolute; inset:6px; border-radius:50%; background:#fff; }
+  .ability .knob span { position:relative; font-size:11px; font-weight:800; letter-spacing:.08em; color:var(--blue); }
+  .ability.dim .knob span { color:#9aa6b6; }
+  .ability.dim .knob { box-shadow:none; }
+  .ability.active .knob { width:60px; height:60px; }
+  .ability.active .knob span { font-size:9px; }
+
+  /* Overlay */
+  #overlay { position:absolute; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:center;
+    background:rgba(233,237,243,.82); z-index:10; text-align:center; gap:10px; }
+  #overlay.hidden { display:none; }
+  #overlay h1 { margin:0; font-size:38px; letter-spacing:.04em; }
+  #overlay p { margin:0; font-size:14px; font-weight:600; color:#6b778a; letter-spacing:.06em; }
+</style>
+</head>
+<body>
+<div id="app">
+  <div id="hud">
+    <div class="hp you"><span>YOU</span><div class="bar"><div class="fill" id="hpYou"></div></div></div>
+    <div class="hp bot"><span>BOT</span><div class="bar"><div class="fill" id="hpBot"></div></div></div>
+  </div>
+  <div id="stage"></div>
+  <div id="controls">
+    <div class="ability" id="btnThrust"><div class="base"></div><div class="knob"><span>THRUST</span></div></div>
+    <div class="ability" id="btnLaser"><div class="base"></div><div class="knob"><span>LASER</span></div></div>
+  </div>
+  <div id="overlay"><h1 id="ovTitle">ROBOT FIGHT</h1><p id="ovSub">TAP TO START</p></div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+(() => {
+'use strict';
+
+// ---------- Tuning ----------
+const CFG = {
+  arenaW: 10, arenaD: 18, wallH: 0.6, wallT: 0.4,
+  robotR: 0.75, robotH: 0.55,
+  baseSpeed: 5.5,
+  // Thrusters
+  thrustForce: 20,          // acceleration while thrusting (units/s^2)
+  thrustMaxSpeed: 9.0,      // raised speed cap while thrusting
+  thrustMinSpeed: 1.8,      // how far you can brake while thrusting
+  thrustDrain: 1 / 2.5,     // charge per second while thrusting
+  thrustRegen: 1 / 5.0,     // charge per second while released
+  thrustRegenDelay: 0.5,
+  thrustMinStart: 0.12,     // charge needed to (re)ignite
+  thrustInvert: true,       // true: force is OPPOSITE to drag direction (exhaust points where you drag)
+  speedReturn: 25,          // how fast speed snaps back to base after thrust ends
+  // Laser
+  laserCooldown: 2.5, laserShots: 5, laserInterval: 0.09,
+  laserSpeed: 22, laserDamage: 6, laserLen: 0.9,
+  maxHp: 100,
+  camElevation: 58          // degrees above the floor plane
+};
+const BLUE = 0x2f7df6, RED = 0xf0443e;
+
+// ---------- Scene ----------
+const stage = document.getElementById('stage');
+const renderer = new THREE.WebGLRenderer({ antialias: true });
+renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+renderer.setClearColor(0xe9edf3);
+renderer.shadowMap.enabled = true;
+renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+stage.appendChild(renderer.domElement);
+
+const scene = new THREE.Scene();
+const camera = new THREE.OrthographicCamera(-1, 1, 1, -1, 0.1, 100);
+{
+  const a = CFG.camElevation * Math.PI / 180;
+  camera.position.set(0, 30 * Math.sin(a), 30 * Math.cos(a));
+  camera.lookAt(0, 0, 0);
+  camera.updateMatrixWorld(true);
+}
+
+scene.add(new THREE.HemisphereLight(0xffffff, 0xcfd6e0, 0.7));
+const sun = new THREE.DirectionalLight(0xffffff, 0.35);
+sun.position.set(5, 14, 6);
+sun.castShadow = true;
+sun.shadow.mapSize.set(1024, 1024);
+Object.assign(sun.shadow.camera, { left: -12, right: 12, top: 12, bottom: -12, near: 1, far: 40 });
+sun.shadow.radius = 3;
+scene.add(sun);
+
+// Arena
+const HW = CFG.arenaW / 2, HD = CFG.arenaD / 2;
+{
+  const floor = new THREE.Mesh(new THREE.PlaneGeometry(CFG.arenaW, CFG.arenaD),
+    new THREE.MeshLambertMaterial({ color: 0xf7f9fc }));
+  floor.rotation.x = -Math.PI / 2; floor.receiveShadow = true; scene.add(floor);
+
+  const line = new THREE.Mesh(new THREE.PlaneGeometry(CFG.arenaW, 0.06),
+    new THREE.MeshBasicMaterial({ color: 0xdfe5ed }));
+  line.rotation.x = -Math.PI / 2; line.position.y = 0.005; scene.add(line);
+
+  const wallMat = new THREE.MeshLambertMaterial({ color: 0xa9b4c6 });
+  const t = CFG.wallT, h = CFG.wallH;
+  const mk = (w, d, x, z) => {
+    const m = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), wallMat);
+    m.position.set(x, h / 2, z); m.castShadow = true; m.receiveShadow = true; scene.add(m);
+  };
+  mk(CFG.arenaW + 2 * t, t, 0, -HD - t / 2);
+  mk(CFG.arenaW + 2 * t, t, 0,  HD + t / 2);
+  mk(t, CFG.arenaD, -HW - t / 2, 0);
+  mk(t, CFG.arenaD,  HW + t / 2, 0);
+}
+
+// Fit the whole arena (incl. walls) inside the stage, whatever its aspect ratio
+function fitCamera() {
+  const w = stage.clientWidth, h = stage.clientHeight;
+  if (!w || !h) return;
+  renderer.setSize(w, h, false);
+  const inv = camera.matrixWorldInverse.copy(camera.matrixWorld).invert();
+  let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
+  const v = new THREE.Vector3(), ex = HW + CFG.wallT, ez = HD + CFG.wallT;
+  for (const x of [-ex, ex]) for (const y of [0, CFG.wallH]) for (const z of [-ez, ez]) {
+    v.set(x, y, z).applyMatrix4(inv);
+    minX = Math.min(minX, v.x); maxX = Math.max(maxX, v.x);
+    minY = Math.min(minY, v.y); maxY = Math.max(maxY, v.y);
+  }
+  const cx = (minX + maxX) / 2, cy = (minY + maxY) / 2;
+  let hw = (maxX - minX) / 2 * 1.05, hh = (maxY - minY) / 2 * 1.05;
+  const aspect = w / h;
+  if (hw / hh > aspect) hh = hw / aspect; else hw = hh * aspect;
+  camera.left = cx - hw; camera.right = cx + hw; camera.top = cy + hh; camera.bottom = cy - hh;
+  camera.updateProjectionMatrix();
+}
+new ResizeObserver(fitCamera).observe(stage);
+fitCamera();
+
+// ---------- Robots ----------
+function makeRobot(color, isPlayer) {
+  const mat = new THREE.MeshLambertMaterial({ color });
+  const mesh = new THREE.Mesh(new THREE.CylinderGeometry(CFG.robotR, CFG.robotR, CFG.robotH, 32), mat);
+  mesh.castShadow = true;
+  const cap = new THREE.Mesh(new THREE.CylinderGeometry(CFG.robotR * 0.55, CFG.robotR * 0.55, 0.08, 24),
+    new THREE.MeshLambertMaterial({ color: 0xffffff }));
+  cap.position.y = CFG.robotH / 2 + 0.04; mesh.add(cap);
+  scene.add(mesh);
+
+  const flame = new THREE.Mesh(new THREE.ConeGeometry(0.28, 0.9, 12),
+    new THREE.MeshBasicMaterial({ color: isPlayer ? 0x7fd0ff : 0xffb37a }));
+  flame.visible = false; scene.add(flame);
+
+  return { isPlayer, color, mesh, mat, flame, x: 0, z: 0, vx: 0, vz: 0, hp: CFG.maxHp,
+    cd: 0, charge: 1, regenWait: 0, burst: null, thrust: null, thrusting: false, flash: 0 };
+}
+const player = makeRobot(BLUE, true);
+const bot = makeRobot(RED, false);
+const robots = [player, bot];
+const enemyOf = r => (r === player ? bot : player);
+
+// Aim preview for the laser
+const aimLen = 9;
+const aimGeo = new THREE.PlaneGeometry(0.22, aimLen); aimGeo.rotateX(-Math.PI / 2); aimGeo.translate(0, 0, aimLen / 2);
+const aimLine = new THREE.Mesh(aimGeo, new THREE.MeshBasicMaterial({ color: BLUE, transparent: true, opacity: 0.28 }));
+aimLine.position.y = 0.02; aimLine.visible = false; scene.add(aimLine);
+
+// ---------- Lasers ----------
+const laserGeo = new THREE.BoxGeometry(0.14, 0.14, CFG.laserLen);
+const laserMats = { true: new THREE.MeshBasicMaterial({ color: 0x4a9bff }), false: new THREE.MeshBasicMaterial({ color: 0xff5a52 }) };
+const lasers = [];
+function fireShot(r, dx, dz) {
+  const m = new THREE.Mesh(laserGeo, laserMats[r.isPlayer]);
+  const off = CFG.robotR + CFG.laserLen / 2;
+  const s = { m, owner: r, x: r.x + dx * off, z: r.z + dz * off, vx: dx * CFG.laserSpeed, vz: dz * CFG.laserSpeed };
+  m.position.set(s.x, CFG.robotH * 0.6, s.z); m.rotation.y = Math.atan2(dx, dz);
+  scene.add(m); lasers.push(s);
+}
+function tryLaser(r, dir) {           // dir: {x,z} unit vector, or null = auto-aim at the enemy
+  if (r.cd > 0 || r.burst) return false;
+  r.cd = CFG.laserCooldown;
+  r.burst = { n: CFG.laserShots, t: 0, dir };
+  return true;
+}
+
+// ---------- Input: Brawl-style buttons that turn into joysticks ----------
+function makeStick(el) {
+  const knob = el.querySelector('.knob');
+  const R = 60, DEAD = 12;
+  const s = { held: false, id: null, ox: 0, oy: 0, x: 0, y: 0, mag: 0, dragged: false, onRelease: null, el, knob };
+  const set = (px, py) => {
+    let dx = px - s.ox, dy = py - s.oy; const d = Math.hypot(dx, dy);
+    if (d > DEAD) s.dragged = true;
+    if (d > R) { dx *= R / d; dy *= R / d; }
+    knob.style.transform = `translate(${dx}px,${dy}px)`;
+    if (d > DEAD) { s.x = dx / Math.hypot(dx, dy); s.y = dy / Math.hypot(dx, dy); s.mag = Math.min(1, d / R); }
+    else { s.x = s.y = s.mag = 0; }
+  };
+  el.addEventListener('pointerdown', e => {
+    if (s.held) return;
+    e.preventDefault();
+    try { el.setPointerCapture(e.pointerId); } catch (_) {}
+    s.held = true; s.id = e.pointerId; s.ox = e.clientX; s.oy = e.clientY; s.dragged = false; s.x = s.y = s.mag = 0;
+    el.classList.add('active');
+  });
+  el.addEventListener('pointermove', e => { if (s.held && e.pointerId === s.id) set(e.clientX, e.clientY); });
+  const end = (e, cancelled) => {
+    if (!s.held || e.pointerId !== s.id) return;
+    s.held = false; s.id = null; el.classList.remove('active'); knob.style.transform = '';
+    if (!cancelled && s.onRelease) s.onRelease(s);
+    s.x = s.y = s.mag = 0;
+  };
+  el.addEventListener('pointerup', e => end(e, false));
+  el.addEventListener('pointercancel', e => end(e, true));
+  return s;
+}
+const thrustStick = makeStick(document.getElementById('btnThrust'));
+const laserStick = makeStick(document.getElementById('btnLaser'));
+// Screen right = world +x, screen down = world +z (camera looks from +z)
+laserStick.onRelease = s => {
+  if (state !== 'playing') return;
+  if (s.mag > 0) tryLaser(player, { x: s.x, z: s.y });       // aimed
+  else if (!s.dragged) tryLaser(player, null);               // plain tap: auto-aim
+  // dragged out and back to the centre: cancelled
+};
+document.addEventListener('contextmenu', e => e.preventDefault());
+
+// ---------- Bot brain ----------
+const ai = { fireWait: 1, thrustT: 0, nextThrust: 2, scan: 0, dir: { x: 0, z: 0 } };
+function botThink(dt) {
+  // Laser: lead the target a bit, with some aim error
+  if (bot.cd <= 0 && !bot.burst) {
+    ai.fireWait -= dt;
+    if (ai.fireWait <= 0) {
+      const dist = Math.hypot(player.x - bot.x, player.z - bot.z), t = dist / CFG.laserSpeed * 0.8;
+      const ang = Math.atan2(player.x + player.vx * t - bot.x, player.z + player.vz * t - bot.z) + (Math.random() - 0.5) * 0.3;
+      tryLaser(bot, { x: Math.sin(ang), z: Math.cos(ang) });
+      ai.fireWait = 0.3 + Math.random() * 1.2;
+    }
+  }
+  // Thrusters: dodge incoming shots, otherwise occasional random bursts
+  if (ai.thrustT > 0) {
+    ai.thrustT -= dt;
+    bot.thrust = ai.thrustT > 0 ? { x: ai.dir.x, z: ai.dir.z, mag: 1 } : null;
+    return;
+  }
+  bot.thrust = null;
+  ai.nextThrust -= dt; ai.scan -= dt;
+  if (ai.scan <= 0 && bot.charge > 0.3) {
+    ai.scan = 0.15;
+    for (const s of lasers) {
+      if (s.owner !== player) continue;
+      const rx = bot.x - s.x, rz = bot.z - s.z, d = Math.hypot(rx, rz);
+      if (d > 7) continue;
+      const ux = s.vx / CFG.laserSpeed, uz = s.vz / CFG.laserSpeed;
+      const along = rx * ux + rz * uz, side = rx * -uz + rz * ux;
+      if (along > 0 && Math.abs(side) < 1.6 && Math.random() < 0.6) {
+        const sg = side >= 0 ? 1 : -1;
+        ai.dir = { x: -uz * sg, z: ux * sg }; ai.thrustT = 0.45; return;
+      }
+    }
+  }
+  if (ai.nextThrust <= 0 && bot.charge > 0.6) {
+    const a = Math.random() * Math.PI * 2;
+    ai.dir = { x: Math.sin(a), z: Math.cos(a) };
+    ai.thrustT = 0.4 + Math.random() * 0.6; ai.nextThrust = 1.5 + Math.random() * 3;
+  }
+}
+
+// ---------- Simulation ----------
+let state = 'menu';
+function reset() {
+  for (const s of lasers) scene.remove(s.m);
+  lasers.length = 0;
+  for (const r of robots) {
+    const a = (Math.random() * 0.5 + 0.25) * Math.PI * (Math.random() < 0.5 ? 1 : -1);
+    r.x = (Math.random() - 0.5) * 4; r.z = r.isPlayer ? HD * 0.55 : -HD * 0.55;
+    r.vx = Math.sin(a) * CFG.baseSpeed; r.vz = Math.cos(a) * CFG.baseSpeed * (r.isPlayer ? -1 : 1);
+    r.hp = CFG.maxHp; r.cd = 0; r.charge = 1; r.regenWait = 0; r.burst = null; r.thrust = null; r.thrusting = false; r.flash = 0;
+  }
+  ai.fireWait = 1.2; ai.thrustT = 0; ai.nextThrust = 2;
+}
+
+function stepRobot(r, dt) {
+  // Thrusters
+  const want = r.thrust && r.thrust.mag > 0;
+  if (want && (r.thrusting ? r.charge > 0 : r.charge >= CFG.thrustMinStart)) {
+    r.thrusting = true;
+    r.vx += r.thrust.x * r.thrust.mag * CFG.thrustForce * dt;
+    r.vz += r.thrust.z * r.thrust.mag * CFG.thrustForce * dt;
+    r.charge = Math.max(0, r.charge - CFG.thrustDrain * dt);
+    r.regenWait = CFG.thrustRegenDelay;
+  } else {
+    r.thrusting = false;
+    if (!want) {                       // no recharge while the button is still held
+      r.regenWait -= dt;
+      if (r.regenWait <= 0) r.charge = Math.min(1, r.charge + CFG.thrustRegen * dt);
+    }
+  }
+  // Speed rule: constant speed, except thrusters may push it within [min, max]
+  let sp = Math.hypot(r.vx, r.vz);
+  if (sp < 1e-4) { r.vx = CFG.thrustMinSpeed; r.vz = 0; sp = CFG.thrustMinSpeed; }
+  let target = sp;
+  if (r.thrusting) target = Math.min(CFG.thrustMaxSpeed, Math.max(CFG.thrustMinSpeed, sp));
+  else target = sp + (CFG.baseSpeed - sp) * Math.min(1, CFG.speedReturn * dt);
+  r.vx *= target / sp; r.vz *= target / sp;
+
+  // Move + wall bounce
+  r.x += r.vx * dt; r.z += r.vz * dt;
+  const mx = HW - CFG.robotR, mz = HD - CFG.robotR;
+  if (r.x > mx) { r.x = mx; r.vx = -Math.abs(r.vx); } else if (r.x < -mx) { r.x = -mx; r.vx = Math.abs(r.vx); }
+  if (r.z > mz) { r.z = mz; r.vz = -Math.abs(r.vz); } else if (r.z < -mz) { r.z = -mz; r.vz = Math.abs(r.vz); }
+
+  // Laser cooldown + burst
+  r.cd = Math.max(0, r.cd - dt);
+  if (r.burst) {
+    r.burst.t -= dt;
+    while (r.burst && r.burst.t <= 0) {
+      let d = r.burst.dir;
+      if (!d) { const e = enemyOf(r), l = Math.hypot(e.x - r.x, e.z - r.z) || 1; d = { x: (e.x - r.x) / l, z: (e.z - r.z) / l }; }
+      fireShot(r, d.x, d.z);
+      r.burst.t += CFG.laserInterval;
+      if (--r.burst.n <= 0) r.burst = null;
+    }
+  }
+  r.flash = Math.max(0, r.flash - dt * 6);
+}
+
+function collideRobots() {
+  const a = player, b = bot;
+  let nx = b.x - a.x, nz = b.z - a.z; const d = Math.hypot(nx, nz), min = CFG.robotR * 2;
+  if (d >= min) return;
+  if (d < 1e-4) { nx = 1; nz = 0; } else { nx /= d; nz /= d; }
+  const push = (min - d) / 2;
+  a.x -= nx * push; a.z -= nz * push; b.x += nx * push; b.z += nz * push;
+  const rel = (b.vx - a.vx) * nx + (b.vz - a.vz) * nz;
+  if (rel < 0) {                        // equal-mass elastic bounce: swap normal components
+    a.vx += rel * nx; a.vz += rel * nz; b.vx -= rel * nx; b.vz -= rel * nz;
+    // never let a bounce leave a robot stalled: keep them separating at base speed
+    for (const [r, sg] of [[a, -1], [b, 1]]) {
+      const sp = Math.hypot(r.vx, r.vz);
+      if (sp < 0.5) { r.vx = nx * sg * CFG.baseSpeed; r.vz = nz * sg * CFG.baseSpeed; }
+      else if (!r.thrusting) { r.vx *= CFG.baseSpeed / sp; r.vz *= CFG.baseSpeed / sp; }
+    }
+  }
+}
+
+function stepLasers(dt) {
+  for (let i = lasers.length - 1; i >= 0; i--) {
+    const s = lasers[i];
+    s.x += s.vx * dt; s.z += s.vz * dt;
+    const e = enemyOf(s.owner);
+    let dead = Math.abs(s.x) > HW || Math.abs(s.z) > HD;
+    if (!dead && Math.hypot(e.x - s.x, e.z - s.z) < CFG.robotR + 0.2) {
+      dead = true; e.hp = Math.max(0, e.hp - CFG.laserDamage); e.flash = 1;
+    }
+    if (dead) { scene.remove(s.m); lasers.splice(i, 1); } else s.m.position.set(s.x, CFG.robotH * 0.6, s.z);
+  }
+}
+
+// ---------- UI ----------
+const ui = {
+  hpYou: document.getElementById('hpYou'), hpBot: document.getElementById('hpBot'),
+  overlay: document.getElementById('overlay'), title: document.getElementById('ovTitle'), sub: document.getElementById('ovSub')
+};
+function showOverlay(title, sub, color) {
+  ui.title.textContent = title; ui.title.style.color = color || ''; ui.sub.textContent = sub;
+  ui.overlay.classList.remove('hidden');
+}
+let overlayShownAt = 0;
+ui.overlay.addEventListener('pointerup', () => {
+  if (performance.now() - overlayShownAt < 500) return;   // avoid accidental instant restart
+  reset(); state = 'playing'; ui.overlay.classList.add('hidden');
+});
+
+const UP = new THREE.Vector3(0, 1, 0), tmpV = new THREE.Vector3();
+function syncVisuals(time) {
+  for (const r of robots) {
+    r.mesh.position.set(r.x, CFG.robotH / 2, r.z);
+    r.mat.emissive.setScalar(r.flash * 0.8);
+    r.flame.visible = r.thrusting;
+    if (r.thrusting) {
+      const l = Math.hypot(r.thrust.x, r.thrust.z) || 1, ex = -r.thrust.x / l, ez = -r.thrust.z / l; // exhaust direction
+      const len = (0.7 + 0.3 * Math.sin(time * 40)) * (0.5 + 0.5 * r.thrust.mag);
+      r.flame.scale.set(1, len, 1);
+      r.flame.position.set(r.x + ex * (CFG.robotR + 0.45 * len), CFG.robotH / 2, r.z + ez * (CFG.robotR + 0.45 * len));
+      r.flame.quaternion.setFromUnitVectors(UP, tmpV.set(ex, 0, ez));
+    }
+  }
+  // Laser aim preview
+  aimLine.visible = state === 'playing' && laserStick.held && laserStick.mag > 0;
+  if (aimLine.visible) { aimLine.position.x = player.x; aimLine.position.z = player.z; aimLine.rotation.y = Math.atan2(laserStick.x, laserStick.y); }
+  // HUD + buttons
+  ui.hpYou.style.width = (player.hp / CFG.maxHp * 100) + '%';
+  ui.hpBot.style.width = (bot.hp / CFG.maxHp * 100) + '%';
+  laserStick.knob.style.setProperty('--p', (1 - player.cd / CFG.laserCooldown).toFixed(3));
+  laserStick.el.classList.toggle('dim', player.cd > 0);
+  thrustStick.knob.style.setProperty('--p', player.charge.toFixed(3));
+  thrustStick.el.classList.toggle('dim', player.charge < CFG.thrustMinStart && !player.thrusting);
+}
+
+// ---------- Loop ----------
+let last = performance.now();
+function frame(now) {
+  const dt = Math.min(0.033, (now - last) / 1000); last = now;
+  if (state === 'playing') {
+    const sgn = CFG.thrustInvert ? -1 : 1;
+    player.thrust = thrustStick.held && thrustStick.mag > 0
+      ? { x: thrustStick.x * sgn, z: thrustStick.y * sgn, mag: thrustStick.mag } : null;
+    botThink(dt);
+    stepRobot(player, dt); stepRobot(bot, dt);
+    collideRobots();
+    stepLasers(dt);
+    if (player.hp <= 0 || bot.hp <= 0) {
+      state = 'over'; overlayShownAt = now;
+      player.thrusting = bot.thrusting = false;
+      if (bot.hp <= 0) showOverlay('YOU WIN', 'TAP TO PLAY AGAIN', '#2f7df6');
+      else showOverlay('YOU LOSE', 'TAP TO PLAY AGAIN', '#f0443e');
+    }
+  }
+  syncVisuals(now / 1000);
+  renderer.render(scene, camera);
+  requestAnimationFrame(frame);
+}
+reset();
+requestAnimationFrame(frame);
+
+// Debug handle for tuning from the console
+window.RoBotFight = { CFG, player, bot, lasers, get state() { return state; } };
+})();
+</script>
+</body>
+</html>
