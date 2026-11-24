@@ -26,8 +26,10 @@
     display:flex; gap:12px; align-items:center; font-size:11px; font-weight:700; letter-spacing:.08em; }
   .hp { flex:1; display:flex; align-items:center; gap:8px; }
   .hp.bot { flex-direction:row-reverse; }
-  .hp .bar { flex:1; height:10px; border-radius:5px; background:var(--muted); overflow:hidden; }
-  .hp .fill { height:100%; width:100%; border-radius:5px; transition:width .12s linear; }
+  .hp .bar { position:relative; flex:1; height:18px; border-radius:9px; background:var(--muted); overflow:hidden; }
+  .hp .fill { height:100%; width:100%; border-radius:9px; transition:width .12s linear; }
+  .hp .num { position:absolute; inset:0; display:flex; align-items:center; justify-content:center; font-size:13px; font-weight:900;
+    letter-spacing:.02em; color:#fff; -webkit-text-stroke:3px #1c2533; paint-order:stroke fill; }
   .hp.you .fill { background:var(--blue); }
   .hp.bot .fill { background:var(--red); margin-left:auto; }
 
@@ -35,9 +37,27 @@
   #stage { flex:1 1 auto; position:relative; min-height:0; }
   #stage canvas { position:absolute; inset:0; width:100%; height:100%; display:block; }
 
+  /* Rising damage numbers */
+  .dmg { position:absolute; z-index:3; pointer-events:none; font-weight:900; color:#ffd60a; line-height:1;
+    -webkit-text-stroke:4px #000; paint-order:stroke fill; transform:translate(-50%,-50%);
+    animation:dmgRise .85s ease-out forwards; }
+  @keyframes dmgRise {
+    0% { transform:translate(-50%,-50%) scale(.6); opacity:1; }
+    15% { transform:translate(-50%,-90%) scale(1.15); opacity:1; }
+    70% { opacity:1; }
+    100% { transform:translate(-50%,-320%) scale(1); opacity:0; }
+  }
+
   /* Controls: bottom quarter */
   #controls { flex:0 0 19%; min-height:136px; position:relative; display:flex; justify-content:space-around; align-items:center;
-    padding-bottom:env(safe-area-inset-bottom); border-top:2px solid #d9dfe8; background:#eef1f6; }
+    padding-bottom:env(safe-area-inset-bottom); background:var(--bg); }
+  /* Shared energy bar: 10 pips, fills smoothly */
+  #energy { flex:0 0 auto; position:relative; height:14px; margin:2px 14px 8px; border-radius:7px; background:var(--muted); overflow:hidden; }
+  #energyFill { height:100%; width:100%; background:linear-gradient(#b07cff, #8b5cf6); }
+  #energy::after { content:""; position:absolute; inset:0;
+    background:repeating-linear-gradient(90deg, transparent 0 calc(10% - 2px), var(--bg) calc(10% - 2px) 10%); }
+  .card .cd { font-size:12px; font-weight:800; color:#5b6b82; background:#e8edf4; border-radius:10px; padding:3px 9px; white-space:nowrap; }
+  .card .cd + .cost { margin-left:0; } .card .cd { margin-left:auto; }
   #btnThrust { display:none; }   /* thrusters are shelved: CFG.thrustersEnabled brings the button back */
   .ability.tap .knob { width:70px; height:70px; transition:transform .06s; }
   .ability.tap.pressed .knob { transform:scale(.88); }
@@ -56,6 +76,29 @@
   .ability.active .knob { width:60px; height:60px; }
   .ability.active .knob span { font-size:9px; }
 
+  /* Draft screen */
+  #draft { position:absolute; inset:0; z-index:9; background:var(--bg); display:flex; flex-direction:column; align-items:stretch;
+    padding:calc(14px + env(safe-area-inset-top)) 14px calc(12px + env(safe-area-inset-bottom)); gap:7px; overflow-y:auto; }
+  #draft.hidden { display:none; }
+  #draft h2 { margin:0; text-align:center; font-size:24px; letter-spacing:.06em; }
+  #draft p { margin:0; text-align:center; font-size:13px; font-weight:600; color:#6b778a; }
+  #draftStatus { min-height:20px; font-size:15px !important; color:var(--ink) !important; font-weight:800 !important; letter-spacing:.04em; }
+  #cards { display:flex; flex-direction:column; gap:7px; margin:2px 0; }
+  .card { position:relative; background:#fff; border:2px solid #dde3ec; border-radius:12px; padding:8px 12px;
+    box-shadow:0 2px 6px rgba(40,60,90,.08); transition:transform .08s, opacity .15s, border-color .15s; }
+  .card .top { display:flex; align-items:center; gap:8px; margin-bottom:4px; }
+  .card .name { font-size:16px; font-weight:800; letter-spacing:.04em; }
+  .card .how { font-size:10px; font-weight:700; letter-spacing:.08em; color:#8a96a8; }
+  .card .cost { margin-left:auto; font-size:12px; font-weight:800; color:#7c4ddb; background:#efe7ff; border-radius:10px; padding:3px 9px; white-space:nowrap; }
+  .card .desc { font-size:12.5px; line-height:1.3; color:#536074; }
+  .card .owner { display:none; position:absolute; top:-9px; right:12px; font-size:10px; font-weight:800; letter-spacing:.1em; color:#fff; border-radius:8px; padding:2px 8px; }
+  #cards.myturn .card:not(.taken) { border-color:var(--blue); }
+  #cards.myturn .card:not(.taken):active { transform:scale(.97); }
+  #cards:not(.myturn) .card:not(.taken) { opacity:.6; }
+  .card.taken .owner { display:block; }
+  .card.mine { border-color:var(--blue); background:#eef5ff; } .card.mine .owner { background:var(--blue); }
+  .card.theirs { border-color:var(--red); background:#fff0ef; } .card.theirs .owner { background:var(--red); }
+
   /* Overlay */
   #overlay { position:absolute; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:center;
     background:rgba(233,237,243,.82); z-index:10; text-align:center; gap:10px; }
@@ -67,15 +110,25 @@
 <body>
 <div id="app">
   <div id="hud">
-    <div class="hp you"><span>YOU</span><div class="bar"><div class="fill" id="hpYou"></div></div></div>
-    <div class="hp bot"><span>BOT</span><div class="bar"><div class="fill" id="hpBot"></div></div></div>
+    <div class="hp you"><span>YOU</span><div class="bar"><div class="fill" id="hpYou"></div><span class="num" id="hpYouNum"></span></div></div>
+    <div class="hp bot"><span>BOT</span><div class="bar"><div class="fill" id="hpBot"></div><span class="num" id="hpBotNum"></span></div></div>
   </div>
   <div id="stage"></div>
+  <div id="energy"><div id="energyFill"></div></div>
   <div id="controls">
     <div class="ability" id="btnThrust"><div class="base"></div><div class="knob"><span>THRUST</span></div></div>
     <div class="ability" id="btnFlame"><div class="base"></div><div class="knob"><span>FLAME</span></div></div>
     <div class="ability tap" id="btnSlam"><div class="knob"><span>SLAM</span></div></div>
+    <div class="ability tap" id="btnShield"><div class="knob"><span>SHIELD</span></div></div>
+    <div class="ability" id="btnGatling"><div class="base"></div><div class="knob"><span>GATLING</span></div></div>
+    <div class="ability" id="btnMortar"><div class="base"></div><div class="knob"><span>MORTAR</span></div></div>
     <div class="ability" id="btnLaser"><div class="base"></div><div class="knob"><span>LASER</span></div></div>
+  </div>
+  <div id="draft" class="hidden">
+    <h2>PICK ABILITIES</h2>
+    <p id="draftOrder"></p>
+    <div id="cards"></div>
+    <p id="draftStatus"></p>
   </div>
   <div id="overlay"><h1 id="ovTitle">ROBOT FIGHT</h1><p id="ovSub">TAP TO START</p></div>
 </div>
@@ -90,20 +143,42 @@ const CFG = {
   arenaW: 10, arenaD: 20, wallH: 0.6, wallT: 0.4,
   robotR: 0.75, robotH: 0.55,
   baseSpeed: 2.75,
-  // Flamer: short-range continuous cone, limited by fuel
+  // Flamer: short-range continuous cone, paid for with energy
   flameRange: 3.2,          // reach measured from the robot's edge
   flameHalfAngle: 16,       // degrees
   flameDps: 12,
-  flameDrain: 1 / 2.5,      // fuel per second while firing
-  flameRegen: 1 / 5.0,      // fuel per second while released
-  flameRegenDelay: 0.5,
-  flameMinStart: 0.12,      // fuel needed to (re)ignite
+  flameCost: 20,            // energy per second while firing
+  flameMinStart: 5,         // energy needed to ignite
   // Slam: tap, hop up, land, damage everything close
-  slamCooldown: 10,
+  slamCost: 30,
+  slamSettle: 0.4,          // hidden lockout after landing before the next slam
   slamTime: 0.5,            // seconds in the air
   slamHeight: 1.3,
   slamRadius: 2.5,          // centre-to-centre distance that gets hit on landing
   slamDamage: 30,
+  // Shield: tap, invulnerable for a while
+  shieldCost: 10,
+  shieldTime: 3,
+  // Mortar: slow lobbed shell, area damage where it lands
+  mortarCost: 35,
+  mortarDamage: 20,
+  mortarRadius: 2.2,        // blast radius drawn on the floor
+  mortarFlight: 1.75,        // seconds in the air, whatever the range
+  mortarHeight: 4,
+  mortarMinRange: 2.5, mortarMaxRange: 12,
+  // Gatling: hold to stream bullets with unlimited range; short aim line makes it harder to aim
+  gatlingRate: 5,           // shots per second
+  gatlingCost: 3,           // energy per shot (15 per second of fire)
+  gatlingDamage: 2,         // per bullet
+  gatlingSpeed: 14,
+  gatlingSpread: 3,         // degrees either side
+  gatlingAimLen: 3.5,       // aim line length (laser's is 9)
+  // Cooldowns in seconds, on top of the energy cost (0 = energy only). Starts when the ability is used.
+  cooldown: { laser: 0, flame: 0, slam: 0, shield: 15, mortar: 0, gatling: 0 },
+  // Draft: abilities each side ends up with
+  picksEach: 3,
+  // Durability: passive, raises max HP
+  durabilityBonus: 0.25,
   // Thrusters (shelved: button hidden and bot does not use them while this is false)
   thrustersEnabled: false,
   thrustForce: 10,          // acceleration while thrusting (units/s^2)
@@ -116,7 +191,11 @@ const CFG = {
   thrustInvert: true,       // true: force is OPPOSITE to drag direction (exhaust points where you drag)
   speedReturn: 25,          // how fast speed snaps back to base after thrust ends
   // Laser
-  laserCooldown: 5, laserShots: 5, laserInterval: 0.09,
+  // Energy: one shared pool pays for every ability
+  energyMax: 100,
+  energyRegen: 5,           // per second, added smoothly every frame
+  laserCost: 20,            // per 5-shot burst
+  laserShots: 5, laserInterval: 0.09,
   laserSpeed: 11, laserDamage: 3,
   laserSpread: 5,           // each shot deviates randomly by up to this many degrees either side
   laserLen: 0.9,
@@ -207,12 +286,15 @@ function makeRobot(color, isPlayer) {
     new THREE.MeshLambertMaterial({ color: 0xffffff }));
   cap.position.y = CFG.robotH / 2 + 0.04; mesh.add(cap);
   scene.add(mesh);
+  const shield = new THREE.Mesh(new THREE.SphereGeometry(1.1, 24, 16),
+    new THREE.MeshBasicMaterial({ color: isPlayer ? 0x7fb4ff : 0xff8f8a, transparent: true, opacity: 0.35, depthWrite: false }));
+  shield.visible = false; mesh.add(shield);
 
   const flame = new THREE.Mesh(new THREE.ConeGeometry(0.28, 0.9, 12),
     new THREE.MeshBasicMaterial({ color: isPlayer ? 0x7fd0ff : 0xffb37a }));
   flame.visible = false; scene.add(flame);
 
-  return { isPlayer, color, mesh, mat, flame, x: 0, z: 0, vx: 0, vz: 0, hp: CFG.maxHp,
+  return { isPlayer, color, mesh, mat, flame, shield, shieldT: 0, abilities: new Set(), x: 0, z: 0, vx: 0, vz: 0, hp: CFG.maxHp,
     cd: 0, charge: 1, regenWait: 0, burst: null, thrust: null, thrusting: false, flash: 0,
     y: 0, fuel: 1, fuelWait: 0, fireOn: false, fireDir: null, firing: false, fireAcc: 0, slamCd: 0, slamT: -1 };
 }
@@ -227,20 +309,44 @@ const aimGeo = new THREE.PlaneGeometry(0.22, aimLen); aimGeo.rotateX(-Math.PI / 
 const aimLine = new THREE.Mesh(aimGeo, new THREE.MeshBasicMaterial({ color: BLUE, transparent: true, opacity: 0.28 }));
 aimLine.position.y = 0.02; aimLine.visible = false; scene.add(aimLine);
 
+// Aim preview for the gatling: same style as the laser's line, but much shorter
+const gunAimGeo = new THREE.PlaneGeometry(0.22, CFG.gatlingAimLen); gunAimGeo.rotateX(-Math.PI / 2); gunAimGeo.translate(0, 0, CFG.gatlingAimLen / 2);
+const gunAim = new THREE.Mesh(gunAimGeo, new THREE.MeshBasicMaterial({ color: BLUE, transparent: true, opacity: 0.28 }));
+gunAim.position.y = 0.02; gunAim.visible = false; scene.add(gunAim);
+
+// Aim preview for the flamer: a wedge exactly as long and wide as the area that deals damage
+const flameAimGeo = new THREE.CircleGeometry(CFG.robotR + CFG.flameRange, 16,
+  -CFG.flameHalfAngle * Math.PI / 180, 2 * CFG.flameHalfAngle * Math.PI / 180);
+flameAimGeo.rotateX(-Math.PI / 2);   // lies flat, pointing along +x
+const flameAim = new THREE.Mesh(flameAimGeo, new THREE.MeshBasicMaterial({ color: BLUE, transparent: true, opacity: 0.25, depthWrite: false }));
+flameAim.position.y = 0.02; flameAim.visible = false; scene.add(flameAim);
+
+// Aim preview for the mortar: dotted arc + blast zone
+const arcDots = [];
+{
+  const g = new THREE.SphereGeometry(0.09, 8, 6), mt = new THREE.MeshBasicMaterial({ color: BLUE });
+  for (let i = 0; i < 14; i++) { const d = new THREE.Mesh(g, mt); d.visible = false; scene.add(d); arcDots.push(d); }
+}
+const aimDiscGeo = new THREE.CircleGeometry(1, 48); aimDiscGeo.rotateX(-Math.PI / 2);
+const aimDisc = new THREE.Mesh(aimDiscGeo, new THREE.MeshBasicMaterial({ color: BLUE, transparent: true, opacity: 0.25, depthWrite: false }));
+aimDisc.position.y = 0.02; aimDisc.visible = false; scene.add(aimDisc);
+
 // ---------- Lasers ----------
 const laserGeo = new THREE.BoxGeometry(0.14, 0.14, CFG.laserLen);
 const laserMats = { true: new THREE.MeshBasicMaterial({ color: 0x4a9bff }), false: new THREE.MeshBasicMaterial({ color: 0xff5a52 }) };
 const lasers = [];
-function fireShot(r, dx, dz) {
-  const m = new THREE.Mesh(laserGeo, laserMats[r.isPlayer]);
-  const off = CFG.robotR + CFG.laserLen / 2;
-  const s = { m, owner: r, x: r.x + dx * off, z: r.z + dz * off, vx: dx * CFG.laserSpeed, vz: dz * CFG.laserSpeed };
+const bulletGeo = new THREE.BoxGeometry(0.2, 0.2, 0.42);
+function fireShot(r, dx, dz, bullet) {      // bullet = gatling round, otherwise a laser shot
+  const m = new THREE.Mesh(bullet ? bulletGeo : laserGeo, laserMats[r.isPlayer]);
+  const off = CFG.robotR + (bullet ? 0.21 : CFG.laserLen / 2), spd = bullet ? CFG.gatlingSpeed : CFG.laserSpeed;
+  const s = { m, owner: r, x: r.x + dx * off, z: r.z + dz * off, vx: dx * spd, vz: dz * spd,
+    dmg: bullet ? CFG.gatlingDamage : CFG.laserDamage };
   m.position.set(s.x, CFG.robotH * 0.6, s.z); m.rotation.y = Math.atan2(dx, dz);
   scene.add(m); lasers.push(s);
 }
 function tryLaser(r, dir) {           // dir: {x,z} unit vector, or null = auto-aim at the enemy
-  if (r.cd > 0 || r.burst) return false;
-  r.cd = CFG.laserCooldown;
+  if (r.energy < CFG.laserCost || r.burst || !ready(r, 'laser')) return false;
+  r.energy -= CFG.laserCost; startCd(r, 'laser');
   r.burst = { n: CFG.laserShots, t: 0, dir };
   return true;
 }
@@ -272,16 +378,84 @@ function stepPuffs(dt) {
 const ringGeo = new THREE.RingGeometry(0.86, 1, 48); ringGeo.rotateX(-Math.PI / 2);
 const rings = [];
 function startSlam(r) {
-  if (r.slamCd > 0 || r.slamT >= 0) return false;
-  r.slamCd = CFG.slamCooldown; r.slamT = 0;
+  if (r.energy < CFG.slamCost || r.slamCd > 0 || r.slamT >= 0 || !ready(r, 'slam')) return false;
+  r.energy -= CFG.slamCost; startCd(r, 'slam');
+  r.slamCd = CFG.slamTime + CFG.slamSettle; r.slamT = 0;
   return true;
 }
+function startShield(r) {
+  if (r.energy < CFG.shieldCost || !ready(r, 'shield')) return false;
+  r.energy -= CFG.shieldCost; r.shieldT = CFG.shieldTime; startCd(r, 'shield');
+  return true;
+}
+// All damage goes through here so every hit shows a rising number above the victim.
+// Continuous damage (flamer) is pooled and shown in chunks instead of once per frame.
+const projV = new THREE.Vector3();
+function hurt(e, amt, flash, continuous) {
+  e.hp = Math.max(0, e.hp - amt); e.flash = Math.max(e.flash, flash);
+  if (continuous) { e.dmgAcc += amt; if (e.dmgAcc < 3) return; amt = e.dmgAcc; e.dmgAcc = 0; }
+  projV.set(e.x, CFG.robotH + e.y + 0.9, e.z).project(camera);
+  const el = document.createElement('div');
+  el.className = 'dmg'; el.textContent = Math.round(amt);
+  el.style.left = ((projV.x + 1) / 2 * stage.clientWidth + (Math.random() - 0.5) * 26) + 'px';
+  el.style.top = ((1 - projV.y) / 2 * stage.clientHeight) + 'px';
+  el.style.fontSize = (17 + Math.min(amt, 40) * 0.45) + 'px';     // bigger hits, bigger numbers
+  el.addEventListener('animationend', () => el.remove());
+  stage.appendChild(el);
+}
+// Per-ability cooldowns
+function ready(r, id) { return !(r.cdl[id] > 0); }
+function startCd(r, id) { if (CFG.cooldown[id] > 0) r.cdl[id] = CFG.cooldown[id]; }
+
+// ---------- Mortar ----------
+const shellGeo = new THREE.SphereGeometry(0.3, 16, 12);
+const discGeo = new THREE.CircleGeometry(1, 48); discGeo.rotateX(-Math.PI / 2);
+const shells = [];
+function mortarRange(mag) {            // joystick pull -> throw distance
+  const k = Math.min(1, Math.max(0, (mag - 0.23) / 0.77));
+  return CFG.mortarMinRange + (CFG.mortarMaxRange - CFG.mortarMinRange) * k;
+}
+function mortarTarget(r, dx, dz, dist) {   // landing point, kept in range and inside the arena
+  dist = Math.min(CFG.mortarMaxRange, dist);
+  return { x: Math.min(HW, Math.max(-HW, r.x + dx * dist)), z: Math.min(HD, Math.max(-HD, r.z + dz * dist)) };
+}
+function arcY(k) { return CFG.robotH + 4 * CFG.mortarHeight * k * (1 - k); }
+function tryMortar(r, tx, tz) {
+  if (r.energy < CFG.mortarCost || !ready(r, 'mortar')) return false;
+  r.energy -= CFG.mortarCost; startCd(r, 'mortar');
+  const m = new THREE.Mesh(shellGeo, new THREE.MeshLambertMaterial({ color: r.color })); m.castShadow = true;
+  const mark = new THREE.Mesh(discGeo, new THREE.MeshBasicMaterial({ color: r.color, transparent: true, opacity: 0.15, depthWrite: false }));
+  mark.position.set(tx, 0.015, tz); mark.scale.setScalar(CFG.mortarRadius);
+  scene.add(m); scene.add(mark);
+  shells.push({ owner: r, m, mark, sx: r.x, sz: r.z, tx, tz, t: 0 });
+  return true;
+}
+function removeShell(s) { scene.remove(s.m); scene.remove(s.mark); s.m.material.dispose(); s.mark.material.dispose(); }
+function stepShells(dt) {
+  for (let i = shells.length - 1; i >= 0; i--) {
+    const s = shells[i]; s.t += dt; const k = s.t / CFG.mortarFlight;
+    if (k < 1) {
+      s.m.position.set(s.sx + (s.tx - s.sx) * k, arcY(k), s.sz + (s.tz - s.sz) * k);
+      s.mark.material.opacity = 0.12 + 0.2 * k;       // landing zone darkens as the shell comes down
+      continue;
+    }
+    addRing(s.tx, s.tz, s.owner.color, CFG.mortarRadius);
+    const e = enemyOf(s.owner);
+    if (Math.hypot(e.x - s.tx, e.z - s.tz) < CFG.mortarRadius + CFG.robotR * 0.5 && e.shieldT <= 0) {
+      hurt(e, CFG.mortarDamage, 1.5);
+    }
+    removeShell(s); shells.splice(i, 1);
+  }
+}
+function addRing(x, z, color, R) {
+  const m = new THREE.Mesh(ringGeo, new THREE.MeshBasicMaterial({ color, transparent: true, opacity: 0.7 }));
+  m.position.set(x, 0.03, z); scene.add(m); rings.push({ m, t: 0, R });
+}
 function landSlam(r) {
-  const m = new THREE.Mesh(ringGeo, new THREE.MeshBasicMaterial({ color: r.color, transparent: true, opacity: 0.7 }));
-  m.position.set(r.x, 0.03, r.z); scene.add(m); rings.push({ m, t: 0 });
+  addRing(r.x, r.z, r.color, CFG.slamRadius);
   const e = enemyOf(r); let nx = e.x - r.x, nz = e.z - r.z; const d = Math.hypot(nx, nz);
-  if (d < CFG.slamRadius && e.y < 0.4) {            // an airborne enemy dodges the shockwave
-    e.hp = Math.max(0, e.hp - CFG.slamDamage); e.flash = 1.5;
+  if (d < CFG.slamRadius && e.y < 0.4 && e.shieldT <= 0) {            // an airborne enemy dodges the shockwave
+    hurt(e, CFG.slamDamage, 1.5);
     if (d < 1e-3) { nx = 0; nz = r.isPlayer ? -1 : 1; } else { nx /= d; nz /= d; }
     const sp = Math.max(CFG.baseSpeed, Math.hypot(e.vx, e.vz));
     e.vx = nx * sp; e.vz = nz * sp;                 // knocked straight away from the impact
@@ -291,7 +465,7 @@ function stepRings(dt) {
   for (let i = rings.length - 1; i >= 0; i--) {
     const g = rings[i]; g.t += dt; const k = g.t / 0.35;
     if (k >= 1) { scene.remove(g.m); g.m.material.dispose(); rings.splice(i, 1); continue; }
-    g.m.scale.setScalar(0.4 + (CFG.slamRadius - 0.4) * k); g.m.material.opacity = 0.7 * (1 - k);
+    g.m.scale.setScalar(0.4 + (g.R - 0.4) * k); g.m.material.opacity = 0.7 * (1 - k);
   }
 }
 
@@ -329,7 +503,21 @@ function makeStick(el) {
 const thrustStick = makeStick(document.getElementById('btnThrust'));
 const laserStick = makeStick(document.getElementById('btnLaser'));
 const flameStick = makeStick(document.getElementById('btnFlame'));
-flameStick.canStart = () => state === 'playing' && player.fuel >= CFG.flameMinStart;
+flameStick.canStart = () => state === 'playing' && player.energy >= CFG.flameMinStart && ready(player, 'flame');
+const gatlingStick = makeStick(document.getElementById('btnGatling'));
+gatlingStick.canStart = () => state === 'playing' && player.energy >= CFG.gatlingCost && ready(player, 'gatling');
+const mortarStick = makeStick(document.getElementById('btnMortar'));
+mortarStick.canStart = () => state === 'playing' && player.energy >= CFG.mortarCost && ready(player, 'mortar');
+mortarStick.onRelease = s => {
+  if (state !== 'playing') return;
+  let t = null;
+  if (s.mag > 0) t = mortarTarget(player, s.x, s.y, mortarRange(s.mag));          // aimed: pull distance sets the range
+  else if (!s.dragged) {                                                            // plain tap: lob at the bot's current spot
+    const dx = bot.x - player.x, dz = bot.z - player.z, d = Math.hypot(dx, dz) || 1;
+    t = mortarTarget(player, dx / d, dz / d, d);
+  }
+  if (t) tryMortar(player, t.x, t.z);
+};
 if (CFG.thrustersEnabled) thrustStick.el.style.display = 'flex';
 // Tap-style ability button (no joystick): fires on touch-down
 function makeTap(el, onTap) {
@@ -338,7 +526,8 @@ function makeTap(el, onTap) {
   return { el, knob };
 }
 const slamBtn = makeTap(document.getElementById('btnSlam'), () => state === 'playing' && startSlam(player));
-laserStick.canStart = () => state === 'playing' && player.cd <= 0;
+const shieldBtn = makeTap(document.getElementById('btnShield'), () => state === 'playing' && startShield(player));
+laserStick.canStart = () => state === 'playing' && player.energy >= CFG.laserCost && !player.burst && ready(player, 'laser');
 thrustStick.canStart = () => state === 'playing' && player.charge >= CFG.thrustMinStart;
 // Screen right = world +x, screen down = world +z (camera looks from +z)
 laserStick.onRelease = s => {
@@ -350,10 +539,52 @@ laserStick.onRelease = s => {
 document.addEventListener('contextmenu', e => e.preventDefault());
 
 // ---------- Bot brain ----------
-const ai = { slamScan: 0, fireWait: 1, thrustT: 0, nextThrust: 2, scan: 0, dir: { x: 0, z: 0 } };
+const ai = { gunning: false, gunErr: 0, mortarWait: 1, shieldScan: 0, slamScan: 0, fireWait: 1, thrustT: 0, nextThrust: 2, scan: 0, dir: { x: 0, z: 0 } };
 function botThink(dt) {
   // Laser: lead the target a bit, with some aim error
-  if (bot.cd <= 0 && !bot.burst) {
+  const has = id => bot.abilities.has(id);
+  // Shield: raise it when something is about to hurt
+  ai.shieldScan -= dt;
+  if (has('shield') && ai.shieldScan <= 0) {
+    ai.shieldScan = 0.1;
+    if (bot.shieldT <= 0 && bot.energy >= CFG.shieldCost && ready(bot, 'shield')) {
+      const gap = Math.hypot(player.x - bot.x, player.z - bot.z);
+      let threat = (player.firing && gap < CFG.flameRange + CFG.robotR * 2.5) || (player.slamT >= 0 && gap < CFG.slamRadius * 1.3);
+      for (const s of shells)        // a shell about to land nearby
+        if (s.owner === player && s.t > CFG.mortarFlight * 0.6 && Math.hypot(bot.x - s.tx, bot.z - s.tz) < CFG.mortarRadius + 1.5) threat = true;
+      for (const s of lasers) {
+        if (threat) break;
+        if (s.owner !== player) continue;
+        const rx = bot.x - s.x, rz = bot.z - s.z;
+        threat = Math.hypot(rx, rz) < 3 && rx * s.vx + rz * s.vz > 0;
+      }
+      if (threat && Math.random() < 0.6) startShield(bot);
+    }
+  }
+  // Mortar: aim where the player will be when the shell lands (wall bounces included), with some error
+  if (has('mortar') && bot.energy >= CFG.mortarCost + 10 && ready(bot, 'mortar')) {
+    ai.mortarWait -= dt;
+    if (ai.mortarWait <= 0) {
+      const fold = (v, m) => { v = (((v + m) % (4 * m)) + 4 * m) % (4 * m); return (v > 2 * m ? 4 * m - v : v) - m; };
+      const t = CFG.mortarFlight;
+      const px = fold(player.x + player.vx * t, HW - CFG.robotR) + (Math.random() - 0.5) * 2.6;
+      const pz = fold(player.z + player.vz * t, HD - CFG.robotR) + (Math.random() - 0.5) * 2.6;
+      const dx = px - bot.x, dz = pz - bot.z, d = Math.hypot(dx, dz) || 1;
+      const tg = mortarTarget(bot, dx / d, dz / d, d);
+      tryMortar(bot, tg.x, tg.z);
+      ai.mortarWait = 0.5 + Math.random() * 2;
+    }
+  }
+  // Gatling: fire in bursts (start with a decent reserve, stop when nearly empty), leading the target with some error
+  if (has('gatling')) {
+    if (!ai.gunning && bot.energy > 35) { ai.gunning = true; ai.gunErr = (Math.random() - 0.5) * 0.35; }
+    if (ai.gunning && bot.energy < 8) ai.gunning = false;
+    bot.gunOn = ai.gunning;
+    const dist = Math.hypot(player.x - bot.x, player.z - bot.z), t = dist / CFG.gatlingSpeed * 0.8;
+    const ang = Math.atan2(player.x + player.vx * t - bot.x, player.z + player.vz * t - bot.z) + ai.gunErr;
+    bot.gunDir = { x: Math.sin(ang), z: Math.cos(ang) };
+  } else bot.gunOn = false;
+  if (has('laser') && bot.energy >= CFG.laserCost + 25 && !bot.burst) {   // keeps a reserve for flamer/slam
     ai.fireWait -= dt;
     if (ai.fireWait <= 0) {
       const dist = Math.hypot(player.x - bot.x, player.z - bot.z), t = dist / CFG.laserSpeed * 0.8;
@@ -365,12 +596,12 @@ function botThink(dt) {
   // Flamer: burn whenever the player is inside the cone's reach
   const pd = Math.hypot(player.x - bot.x, player.z - bot.z);
   bot.fireDir = null;
-  bot.fireOn = pd < CFG.flameRange + CFG.robotR * 1.5 && (bot.firing || bot.fuel > 0.3);
+  bot.fireOn = has('flame') && pd < CFG.flameRange + CFG.robotR * 1.5 && (bot.firing || bot.energy > 15);
   // Slam: jump when the two robots are about to be close at landing time
   ai.slamScan -= dt;
   if (ai.slamScan <= 0) {
     ai.slamScan = 0.1;
-    if (bot.slamCd <= 0 && bot.slamT < 0) {
+    if (has('slam') && bot.energy >= CFG.slamCost && bot.slamCd <= 0 && bot.slamT < 0) {
       const t = CFG.slamTime;
       const fd = Math.hypot(player.x + player.vx * t - bot.x - bot.vx * t, player.z + player.vz * t - bot.z - bot.vz * t);
       if (fd < CFG.slamRadius * 0.7 && Math.random() < 0.5) startSlam(bot);
@@ -411,14 +642,19 @@ let state = 'menu';
 function reset() {
   for (const s of lasers) scene.remove(s.m);
   lasers.length = 0;
+  for (const s of shells) removeShell(s);
+  shells.length = 0;
   for (const p of puffs) { p.m.visible = false; puffPool.push(p.m); }
   puffs.length = 0;
   for (const r of robots) {
-    r.y = 0; r.fuel = 1; r.fuelWait = 0; r.fireOn = false; r.fireDir = null; r.firing = false; r.slamCd = 0; r.slamT = -1;
+    r.dmgAcc = 0; r.gunT = 0; r.gunOn = false; r.gunDir = null; r.gunDry = false;
+    r.energy = CFG.energyMax; r.fireDry = false; r.shieldT = 0; r.cdl = {};
+    r.y = 0; r.fireOn = false; r.fireDir = null; r.firing = false; r.slamCd = 0; r.slamT = -1;
     const a = (Math.random() * 0.5 + 0.25) * Math.PI * (Math.random() < 0.5 ? 1 : -1);
     r.x = (Math.random() - 0.5) * 4; r.z = r.isPlayer ? HD * 0.55 : -HD * 0.55;
     r.vx = Math.sin(a) * CFG.baseSpeed; r.vz = Math.cos(a) * CFG.baseSpeed * (r.isPlayer ? -1 : 1);
-    r.hp = CFG.maxHp; r.cd = 0; r.charge = 1; r.regenWait = 0; r.burst = null; r.thrust = null; r.thrusting = false; r.flash = 0;
+    r.maxHp = Math.round(CFG.maxHp * (r.abilities.has('durability') ? 1 + CFG.durabilityBonus : 1));
+    r.hp = r.maxHp; r.cd = 0; r.charge = 1; r.regenWait = 0; r.burst = null; r.thrust = null; r.thrusting = false; r.flash = 0;
   }
   ai.fireWait = 1.2; ai.thrustT = 0; ai.nextThrust = 2;
 }
@@ -453,28 +689,43 @@ function stepRobot(r, dt) {
   if (r.x > mx) { r.x = mx; r.vx = -Math.abs(r.vx); } else if (r.x < -mx) { r.x = -mx; r.vx = Math.abs(r.vx); }
   if (r.z > mz) { r.z = mz; r.vz = -Math.abs(r.vz); } else if (r.z < -mz) { r.z = -mz; r.vz = Math.abs(r.vz); }
 
-  // Flamer
-  if (r.fireOn && (r.firing ? r.fuel > 0 : r.fuel >= CFG.flameMinStart)) {
+  // Energy trickles in every frame
+  r.energy = Math.min(CFG.energyMax, r.energy + CFG.energyRegen * dt);
+  // Flamer (once it runs dry it stays off until the button is released)
+  if (!r.fireOn) r.fireDry = false;
+  for (const id in r.cdl) r.cdl[id] = Math.max(0, r.cdl[id] - dt);
+  if (r.firing && !(r.fireOn && !r.fireDry)) startCd(r, 'flame');
+  if (r.fireOn && !r.fireDry && (r.firing || (r.energy >= CFG.flameMinStart && ready(r, 'flame')))) {
     r.firing = true;
     const e = enemyOf(r);
     let d = r.fireDir;
     if (!d) { const l = Math.hypot(e.x - r.x, e.z - r.z) || 1; d = { x: (e.x - r.x) / l, z: (e.z - r.z) / l }; }  // no drag: auto-aim
-    r.fuel = Math.max(0, r.fuel - CFG.flameDrain * dt);
-    r.fuelWait = CFG.flameRegenDelay;
+    r.energy = Math.max(0, r.energy - CFG.flameCost * dt);
+    if (r.energy <= 0) r.fireDry = true;
     for (r.fireAcc += dt * 80; r.fireAcc >= 1; r.fireAcc--) spawnPuff(r, d.x, d.z);
     const rx = e.x - r.x, rz = e.z - r.z, along = rx * d.x + rz * d.z, side = Math.abs(rx * d.z - rz * d.x);
     const reach = along - CFG.robotR;             // distance past the shooter's edge
-    if (along > 0 && reach < CFG.flameRange + CFG.robotR &&
+    if (e.shieldT <= 0 && along > 0 && reach < CFG.flameRange + CFG.robotR &&
         side < CFG.robotR + Math.max(0, reach) * Math.tan(CFG.flameHalfAngle * Math.PI / 180)) {
-      e.hp = Math.max(0, e.hp - CFG.flameDps * dt); e.flash = Math.max(e.flash, 0.5);
+      hurt(e, CFG.flameDps * dt, 0.5, true);
     }
   } else {
     r.firing = false;
-    if (!r.fireOn) {                   // no refuel while the button is still held
-      r.fuelWait -= dt;
-      if (r.fuelWait <= 0) r.fuel = Math.min(1, r.fuel + CFG.flameRegen * dt);
+  }
+  // Gatling: one bullet every 1/rate seconds while held (once out of energy it stays off until released)
+  r.gunT = Math.max(0, r.gunT - dt);
+  if (!r.gunOn) r.gunDry = false;
+  if (r.gunOn && !r.gunDry && r.gunT <= 0 && ready(r, 'gatling')) {
+    if (r.energy < CFG.gatlingCost) r.gunDry = true;
+    else {
+      r.energy -= CFG.gatlingCost; r.gunT = 1 / CFG.gatlingRate;
+      let d = r.gunDir;
+      if (!d) { const e = enemyOf(r), l = Math.hypot(e.x - r.x, e.z - r.z) || 1; d = { x: (e.x - r.x) / l, z: (e.z - r.z) / l }; }
+      const sa = (Math.random() * 2 - 1) * CFG.gatlingSpread * Math.PI / 180, cs = Math.cos(sa), sn = Math.sin(sa);
+      fireShot(r, d.x * cs - d.z * sn, d.x * sn + d.z * cs, true);
     }
   }
+  r.shieldT = Math.max(0, r.shieldT - dt);
   // Slam: hop, then land
   r.slamCd = Math.max(0, r.slamCd - dt);
   if (r.slamT >= 0) {
@@ -524,7 +775,8 @@ function stepLasers(dt) {
     const e = enemyOf(s.owner);
     let dead = Math.abs(s.x) > HW || Math.abs(s.z) > HD;
     if (!dead && Math.hypot(e.x - s.x, e.z - s.z) < CFG.robotR + 0.2) {
-      dead = true; e.hp = Math.max(0, e.hp - CFG.laserDamage); e.flash = 1;
+      dead = true;
+      if (e.shieldT <= 0) hurt(e, s.dmg, 1);
     }
     if (dead) { scene.remove(s.m); lasers.splice(i, 1); } else s.m.position.set(s.x, CFG.robotH * 0.6, s.z);
   }
@@ -532,6 +784,8 @@ function stepLasers(dt) {
 
 // ---------- UI ----------
 const ui = {
+  energy: document.getElementById('energyFill'),
+  hpYouNum: document.getElementById('hpYouNum'), hpBotNum: document.getElementById('hpBotNum'),
   hpYou: document.getElementById('hpYou'), hpBot: document.getElementById('hpBot'),
   overlay: document.getElementById('overlay'), title: document.getElementById('ovTitle'), sub: document.getElementById('ovSub')
 };
@@ -542,14 +796,101 @@ function showOverlay(title, sub, color) {
 let overlayShownAt = 0;
 ui.overlay.addEventListener('pointerup', () => {
   if (performance.now() - overlayShownAt < 500) return;   // avoid accidental instant restart
-  reset(); state = 'playing'; ui.overlay.classList.add('hidden');
+  ui.overlay.classList.add('hidden'); startDraft();
 });
+
+// ---------- Ability draft ----------
+// Add an entry here (plus its button and logic) to put a new ability in the draft pool.
+const ABILITIES = {
+  laser:  { name: 'Laser',  weapon: true, how: 'DRAG TO AIM OR TAP', cost: CFG.laserCost, btn: 'btnLaser',
+            desc: `Fires a burst of ${CFG.laserShots} long-range shots, ${CFG.laserDamage} damage each.` },
+  flame:  { name: 'Flamer', weapon: true, how: 'HOLD AND DRAG', cost: CFG.flameCost + ' / sec', btn: 'btnFlame',
+            desc: `Sprays a continuous short-range flame for ${CFG.flameDps} damage per second.` },
+  slam:   { name: 'Slam',   how: 'TAP', cost: CFG.slamCost, btn: 'btnSlam',
+            desc: `Hops up and crashes down, dealing ${CFG.slamDamage} damage to an enemy close to the landing spot. Time it just before a collision.` },
+  shield: { name: 'Shield', how: 'TAP', cost: CFG.shieldCost, btn: 'btnShield',
+            desc: `Makes you invulnerable for ${CFG.shieldTime} seconds.` },
+  gatling: { name: 'Gatling', weapon: true, how: 'HOLD AND DRAG', cost: CFG.gatlingCost + ' / shot', btn: 'btnGatling',
+            desc: `Streams ${CFG.gatlingRate} bullets per second with unlimited range, ${CFG.gatlingDamage} damage each. Its aim line is short, so it is harder to aim.` },
+  durability: { name: 'Durability', how: 'PASSIVE', cost: null, btn: null,     // passive: no button, no energy
+            desc: `Adds ${Math.round(CFG.durabilityBonus * 100)}% HP for the whole match (${CFG.maxHp} → ${Math.round(CFG.maxHp * (1 + CFG.durabilityBonus))}). Always on, nothing to press.` },
+  mortar: { name: 'Mortar', weapon: true, how: 'DRAG TO AIM OR TAP', cost: CFG.mortarCost, btn: 'btnMortar',
+            desc: `Lobs a slow shell that explodes where it lands for ${CFG.mortarDamage} damage in an area. Pull further to throw further.` }
+};
+for (const id in ABILITIES) if (ABILITIES[id].btn) document.getElementById(ABILITIES[id].btn).style.display = 'none';   // shown after the draft
+const dui = { root: document.getElementById('draft'), cards: document.getElementById('cards'),
+  order: document.getElementById('draftOrder'), status: document.getElementById('draftStatus') };
+let draft = null;
+function startDraft() {
+  state = 'draft';
+  const first = Math.random() < 0.5 ? 'you' : 'bot', second = first === 'you' ? 'bot' : 'you';
+  // Order: first picks 1, second picks 2 in a row, then strictly one by one (first, second, first, ...)
+  const order = [first, second, second].slice(0, CFG.picksEach * 2);
+  const count = who => order.filter(o => o === who).length;
+  for (let who = first; order.length < CFG.picksEach * 2; who = who === 'you' ? 'bot' : 'you')
+    if (count(who) < CFG.picksEach) order.push(who);
+  draft = { order, i: 0, owner: {} };
+  dui.order.textContent = (first === 'you' ? 'You pick first' : 'The bot picks first') +
+    `, then ${first === 'you' ? 'the bot picks' : 'you pick'} 2, then one at a time. ${CFG.picksEach} each.`;
+  dui.cards.innerHTML = '';
+  for (const id in ABILITIES) {
+    const a = ABILITIES[id], c = document.createElement('div');
+    c.className = 'card'; c.dataset.id = id;
+    c.innerHTML = `<span class="owner"></span><div class="top"><span class="name">${a.name}</span><span class="how">${a.how}</span>` +
+      (CFG.cooldown[id] > 0 ? `<span class="cd">⏱ ${CFG.cooldown[id]}s</span>` : '') +
+      (a.cost == null ? '<span class="cd">NO ENERGY</span>' : `<span class="cost">⚡ ${a.cost}</span>`) + `</div><div class="desc">${a.desc}</div>`;
+    c.addEventListener('click', () => { if (draft && draft.order[draft.i] === 'you' && !draft.owner[id]) draftPick('you', id); });
+    dui.cards.appendChild(c);
+  }
+  dui.root.classList.remove('hidden');
+  draftNext();
+}
+function draftPick(who, id) {
+  // Hard cap: nobody can end up with more than CFG.picksEach abilities, whatever the pick order does
+  if (draft.owner[id] || Object.values(draft.owner).filter(o => o === who).length >= CFG.picksEach) return;
+  draft.owner[id] = who; draft.i++;
+  const c = dui.cards.querySelector(`[data-id="${id}"]`);
+  c.classList.add('taken', who === 'you' ? 'mine' : 'theirs');
+  c.querySelector('.owner').textContent = who === 'you' ? 'YOU' : 'BOT';
+  draftNext();
+}
+// Bot always secures a weapon (an ability flagged weapon:true) and never takes the last one from a weaponless player
+function botChoice(left) {
+  const owns = who => Object.keys(draft.owner).some(id => draft.owner[id] === who && ABILITIES[id].weapon);
+  const weapons = left.filter(id => ABILITIES[id].weapon);
+  let pool = left;
+  if (!owns('bot') && weapons.length) pool = weapons;
+  else if (!owns('you') && weapons.length === 1 && left.length > 1) pool = left.filter(id => !ABILITIES[id].weapon);
+  return pool[Math.floor(Math.random() * pool.length)];
+}
+function draftNext() {
+  const d = draft, who = d.order[d.i], left = Object.keys(ABILITIES).filter(id => !d.owner[id]);
+  dui.cards.classList.toggle('myturn', who === 'you' && left.length > 1);
+  if (d.i >= d.order.length) { dui.status.textContent = 'FIGHT!'; setTimeout(() => d === draft && endDraft(), 900); return; }
+  if (who === 'bot') {
+    dui.status.textContent = 'Bot is picking…';
+    setTimeout(() => d === draft && draftPick('bot', botChoice(left)), 900);
+  } else if (left.length === 1) {
+    dui.status.textContent = 'The last one is yours';
+    setTimeout(() => d === draft && draftPick('you', left[0]), 700);
+  } else {
+    let n = 0; while (d.order[d.i + n] === 'you') n++;
+    dui.status.textContent = n > 1 ? `Your turn: pick ${n}` : 'Your turn: pick 1';
+  }
+}
+function endDraft() {
+  for (const r of robots) r.abilities = new Set(Object.keys(ABILITIES).filter(id => draft.owner[id] === (r.isPlayer ? 'you' : 'bot')));
+  for (const id in ABILITIES) if (ABILITIES[id].btn) document.getElementById(ABILITIES[id].btn).style.display = player.abilities.has(id) ? 'flex' : 'none';
+  draft = null; dui.root.classList.add('hidden');
+  reset(); state = 'playing';
+}
 
 const UP = new THREE.Vector3(0, 1, 0), tmpV = new THREE.Vector3();
 function syncVisuals(time) {
   for (const r of robots) {
     r.mesh.position.set(r.x, CFG.robotH / 2 + r.y, r.z);
     r.mat.emissive.setScalar(r.flash * 0.8);
+    r.shield.visible = r.shieldT > 0 && (r.shieldT > 0.6 || Math.sin(time * 40) > 0);   // blinks before it drops
     r.flame.visible = r.thrusting;
     if (r.thrusting) {
       const l = Math.hypot(r.thrust.x, r.thrust.z) || 1, ex = -r.thrust.x / l, ez = -r.thrust.z / l; // exhaust direction
@@ -562,15 +903,48 @@ function syncVisuals(time) {
   // Laser aim preview
   aimLine.visible = state === 'playing' && laserStick.held && laserStick.mag > 0;
   if (aimLine.visible) { aimLine.position.x = player.x; aimLine.position.z = player.z; aimLine.rotation.y = Math.atan2(laserStick.x, laserStick.y); }
+  // Flamer aim preview (no drag = auto-aim, so it points at the bot)
+  flameAim.visible = state === 'playing' && flameStick.held;
+  if (flameAim.visible) {
+    let fx = flameStick.x, fz = flameStick.y;
+    if (flameStick.mag <= 0) { fx = bot.x - player.x; fz = bot.z - player.z; }
+    flameAim.position.x = player.x; flameAim.position.z = player.z; flameAim.rotation.y = Math.atan2(-fz, fx);
+  }
+  // Gatling aim preview (no drag = auto-aim at the bot)
+  gunAim.visible = state === 'playing' && gatlingStick.held;
+  if (gunAim.visible) {
+    let gx = gatlingStick.x, gz = gatlingStick.y;
+    if (gatlingStick.mag <= 0) { gx = bot.x - player.x; gz = bot.z - player.z; }
+    gunAim.position.x = player.x; gunAim.position.z = player.z; gunAim.rotation.y = Math.atan2(gx, gz);
+  }
   // HUD + buttons
-  ui.hpYou.style.width = (player.hp / CFG.maxHp * 100) + '%';
-  ui.hpBot.style.width = (bot.hp / CFG.maxHp * 100) + '%';
-  laserStick.knob.style.setProperty('--p', (1 - player.cd / CFG.laserCooldown).toFixed(3));
-  laserStick.el.classList.toggle('dim', player.cd > 0);
-  flameStick.knob.style.setProperty('--p', player.fuel.toFixed(3));
-  flameStick.el.classList.toggle('dim', player.fuel < CFG.flameMinStart && !player.firing);
-  slamBtn.knob.style.setProperty('--p', (1 - player.slamCd / CFG.slamCooldown).toFixed(3));
-  slamBtn.el.classList.toggle('dim', player.slamCd > 0);
+  ui.hpYou.style.width = (player.hp / player.maxHp * 100) + '%';
+  ui.hpBot.style.width = (bot.hp / bot.maxHp * 100) + '%';
+  ui.hpYouNum.textContent = Math.ceil(player.hp);
+  ui.hpBotNum.textContent = Math.ceil(bot.hp);
+  ui.energy.style.width = (player.energy / CFG.energyMax * 100).toFixed(2) + '%';
+  // Buttons: grey when unusable; while on cooldown the ring refills to show the time left
+  const setBtn = (b, id, blocked) => {
+    const cd = player.cdl[id] || 0;
+    b.el.classList.toggle('dim', blocked || cd > 0);
+    b.knob.style.setProperty('--p', cd > 0 ? (1 - cd / CFG.cooldown[id]).toFixed(3) : blocked ? 0 : 1);
+  };
+  setBtn(laserStick, 'laser', player.energy < CFG.laserCost || !!player.burst);
+  setBtn(flameStick, 'flame', !player.firing && (player.fireDry || player.energy < CFG.flameMinStart));
+  setBtn(slamBtn, 'slam', player.energy < CFG.slamCost || player.slamCd > 0);
+  setBtn(shieldBtn, 'shield', player.energy < CFG.shieldCost);
+  setBtn(mortarStick, 'mortar', player.energy < CFG.mortarCost);
+  setBtn(gatlingStick, 'gatling', player.gunDry || (!gatlingStick.held && player.energy < CFG.gatlingCost));
+  // Mortar aim preview: arc dots + blast zone at the landing point
+  const aimM = state === 'playing' && mortarStick.held && mortarStick.mag > 0;
+  aimDisc.visible = aimM;
+  if (aimM) {
+    const t = mortarTarget(player, mortarStick.x, mortarStick.y, mortarRange(mortarStick.mag));
+    aimDisc.position.x = t.x; aimDisc.position.z = t.z; aimDisc.scale.setScalar(CFG.mortarRadius);
+    arcDots.forEach((d, i) => { const k = (i + 1) / (arcDots.length + 1);
+      d.position.set(player.x + (t.x - player.x) * k, arcY(k), player.z + (t.z - player.z) * k); });
+  }
+  for (const d of arcDots) d.visible = aimM;
   thrustStick.knob.style.setProperty('--p', player.charge.toFixed(3));
   thrustStick.el.classList.toggle('dim', player.charge < CFG.thrustMinStart && !player.thrusting);
 }
@@ -585,10 +959,12 @@ function frame(now) {
       ? { x: thrustStick.x * sgn, z: thrustStick.y * sgn, mag: thrustStick.mag } : null;
     player.fireOn = flameStick.held;
     player.fireDir = flameStick.mag > 0 ? { x: flameStick.x, z: flameStick.y } : null;
+    player.gunOn = gatlingStick.held;
+    player.gunDir = gatlingStick.mag > 0 ? { x: gatlingStick.x, z: gatlingStick.y } : null;
     botThink(dt);
     stepRobot(player, dt); stepRobot(bot, dt);
     collideRobots();
-    stepLasers(dt);
+    stepLasers(dt); stepShells(dt);
     if (player.hp <= 0 || bot.hp <= 0) {
       state = 'over'; overlayShownAt = now;
       player.thrusting = bot.thrusting = false;
@@ -606,7 +982,7 @@ reset();
 requestAnimationFrame(frame);
 
 // Debug handle for tuning from the console
-window.RoBotFight = { CFG, player, bot, lasers, get state() { return state; } };
+window.RoBotFight = { CFG, player, bot, lasers, get state() { return state; }, get draft() { return draft; } };
 })();
 </script>
 </body>
