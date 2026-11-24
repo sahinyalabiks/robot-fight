@@ -38,11 +38,14 @@
   /* Controls: bottom quarter */
   #controls { flex:0 0 19%; min-height:136px; position:relative; display:flex; justify-content:space-around; align-items:center;
     padding-bottom:env(safe-area-inset-bottom); border-top:2px solid #d9dfe8; background:#eef1f6; }
-  .ability { position:relative; width:130px; height:130px; display:flex; align-items:center; justify-content:center; touch-action:none; }
+  #btnThrust { display:none; }   /* thrusters are shelved: CFG.thrustersEnabled brings the button back */
+  .ability.tap .knob { width:70px; height:70px; transition:transform .06s; }
+  .ability.tap.pressed .knob { transform:scale(.88); }
+  .ability { position:relative; width:112px; height:112px; display:flex; align-items:center; justify-content:center; touch-action:none; }
   .ability .base { position:absolute; inset:0; border-radius:50%; background:rgba(47,125,246,.10);
     border:2px solid rgba(47,125,246,.35); opacity:0; transform:scale(.6); transition:opacity .1s, transform .1s; }
   .ability.active .base { opacity:1; transform:scale(1); }
-  .ability .knob { --p:1; position:relative; width:80px; height:80px; border-radius:50%;
+  .ability .knob { --p:1; position:relative; width:76px; height:76px; border-radius:50%;
     background:conic-gradient(var(--blue) calc(var(--p) * 360deg), var(--muted) 0);
     display:flex; align-items:center; justify-content:center; will-change:transform;
     box-shadow:0 3px 8px rgba(40,60,90,.18); }
@@ -70,6 +73,8 @@
   <div id="stage"></div>
   <div id="controls">
     <div class="ability" id="btnThrust"><div class="base"></div><div class="knob"><span>THRUST</span></div></div>
+    <div class="ability" id="btnFlame"><div class="base"></div><div class="knob"><span>FLAME</span></div></div>
+    <div class="ability tap" id="btnSlam"><div class="knob"><span>SLAM</span></div></div>
     <div class="ability" id="btnLaser"><div class="base"></div><div class="knob"><span>LASER</span></div></div>
   </div>
   <div id="overlay"><h1 id="ovTitle">ROBOT FIGHT</h1><p id="ovSub">TAP TO START</p></div>
@@ -85,7 +90,22 @@ const CFG = {
   arenaW: 10, arenaD: 20, wallH: 0.6, wallT: 0.4,
   robotR: 0.75, robotH: 0.55,
   baseSpeed: 2.75,
-  // Thrusters
+  // Flamer: short-range continuous cone, limited by fuel
+  flameRange: 3.2,          // reach measured from the robot's edge
+  flameHalfAngle: 16,       // degrees
+  flameDps: 12,
+  flameDrain: 1 / 2.5,      // fuel per second while firing
+  flameRegen: 1 / 5.0,      // fuel per second while released
+  flameRegenDelay: 0.5,
+  flameMinStart: 0.12,      // fuel needed to (re)ignite
+  // Slam: tap, hop up, land, damage everything close
+  slamCooldown: 10,
+  slamTime: 0.5,            // seconds in the air
+  slamHeight: 1.3,
+  slamRadius: 2.5,          // centre-to-centre distance that gets hit on landing
+  slamDamage: 30,
+  // Thrusters (shelved: button hidden and bot does not use them while this is false)
+  thrustersEnabled: false,
   thrustForce: 10,          // acceleration while thrusting (units/s^2)
   thrustMaxSpeed: 4.5,      // raised speed cap while thrusting
   thrustMinSpeed: 0.9,      // how far you can brake while thrusting
@@ -193,7 +213,8 @@ function makeRobot(color, isPlayer) {
   flame.visible = false; scene.add(flame);
 
   return { isPlayer, color, mesh, mat, flame, x: 0, z: 0, vx: 0, vz: 0, hp: CFG.maxHp,
-    cd: 0, charge: 1, regenWait: 0, burst: null, thrust: null, thrusting: false, flash: 0 };
+    cd: 0, charge: 1, regenWait: 0, burst: null, thrust: null, thrusting: false, flash: 0,
+    y: 0, fuel: 1, fuelWait: 0, fireOn: false, fireDir: null, firing: false, fireAcc: 0, slamCd: 0, slamT: -1 };
 }
 const player = makeRobot(BLUE, true);
 const bot = makeRobot(RED, false);
@@ -222,6 +243,56 @@ function tryLaser(r, dir) {           // dir: {x,z} unit vector, or null = auto-
   r.cd = CFG.laserCooldown;
   r.burst = { n: CFG.laserShots, t: 0, dir };
   return true;
+}
+
+// ---------- Flamer particles ----------
+const puffGeo = new THREE.IcosahedronGeometry(0.5, 0);
+const puffMats = [new THREE.MeshBasicMaterial({ color: 0xffd34d, transparent: true, opacity: 0.9 }),
+                  new THREE.MeshBasicMaterial({ color: 0xff8a2b, transparent: true, opacity: 0.75 })];
+const puffs = [], puffPool = [];
+function spawnPuff(r, dx, dz) {
+  const a = Math.atan2(dx, dz) + (Math.random() * 2 - 1) * CFG.flameHalfAngle * Math.PI / 180;
+  const sp = 8 + Math.random() * 3, life = CFG.flameRange / sp;
+  const m = puffPool.pop() || new THREE.Mesh(puffGeo, puffMats[0]);
+  m.visible = true; m.material = puffMats[0]; if (!m.parent) scene.add(m);
+  puffs.push({ m, t: 0, life, x: r.x + Math.sin(a) * CFG.robotR, z: r.z + Math.cos(a) * CFG.robotR,
+    y: CFG.robotH * 0.6 + r.y, vx: Math.sin(a) * sp, vz: Math.cos(a) * sp });
+}
+function stepPuffs(dt) {
+  for (let i = puffs.length - 1; i >= 0; i--) {
+    const p = puffs[i]; p.t += dt; const k = p.t / p.life;
+    if (k >= 1 || Math.abs(p.x) > HW || Math.abs(p.z) > HD) { p.m.visible = false; puffPool.push(p.m); puffs.splice(i, 1); continue; }
+    p.x += p.vx * dt; p.z += p.vz * dt;
+    p.m.position.set(p.x, p.y, p.z); p.m.scale.setScalar(0.2 + 0.5 * k);
+    if (k > 0.35) p.m.material = puffMats[1];
+  }
+}
+
+// ---------- Slam ----------
+const ringGeo = new THREE.RingGeometry(0.86, 1, 48); ringGeo.rotateX(-Math.PI / 2);
+const rings = [];
+function startSlam(r) {
+  if (r.slamCd > 0 || r.slamT >= 0) return false;
+  r.slamCd = CFG.slamCooldown; r.slamT = 0;
+  return true;
+}
+function landSlam(r) {
+  const m = new THREE.Mesh(ringGeo, new THREE.MeshBasicMaterial({ color: r.color, transparent: true, opacity: 0.7 }));
+  m.position.set(r.x, 0.03, r.z); scene.add(m); rings.push({ m, t: 0 });
+  const e = enemyOf(r); let nx = e.x - r.x, nz = e.z - r.z; const d = Math.hypot(nx, nz);
+  if (d < CFG.slamRadius && e.y < 0.4) {            // an airborne enemy dodges the shockwave
+    e.hp = Math.max(0, e.hp - CFG.slamDamage); e.flash = 1.5;
+    if (d < 1e-3) { nx = 0; nz = r.isPlayer ? -1 : 1; } else { nx /= d; nz /= d; }
+    const sp = Math.max(CFG.baseSpeed, Math.hypot(e.vx, e.vz));
+    e.vx = nx * sp; e.vz = nz * sp;                 // knocked straight away from the impact
+  }
+}
+function stepRings(dt) {
+  for (let i = rings.length - 1; i >= 0; i--) {
+    const g = rings[i]; g.t += dt; const k = g.t / 0.35;
+    if (k >= 1) { scene.remove(g.m); g.m.material.dispose(); rings.splice(i, 1); continue; }
+    g.m.scale.setScalar(0.4 + (CFG.slamRadius - 0.4) * k); g.m.material.opacity = 0.7 * (1 - k);
+  }
 }
 
 // ---------- Input: Brawl-style buttons that turn into joysticks ----------
@@ -257,6 +328,16 @@ function makeStick(el) {
 }
 const thrustStick = makeStick(document.getElementById('btnThrust'));
 const laserStick = makeStick(document.getElementById('btnLaser'));
+const flameStick = makeStick(document.getElementById('btnFlame'));
+flameStick.canStart = () => state === 'playing' && player.fuel >= CFG.flameMinStart;
+if (CFG.thrustersEnabled) thrustStick.el.style.display = 'flex';
+// Tap-style ability button (no joystick): fires on touch-down
+function makeTap(el, onTap) {
+  const knob = el.querySelector('.knob');
+  el.addEventListener('pointerdown', e => { e.preventDefault(); if (onTap()) { el.classList.add('pressed'); setTimeout(() => el.classList.remove('pressed'), 120); } });
+  return { el, knob };
+}
+const slamBtn = makeTap(document.getElementById('btnSlam'), () => state === 'playing' && startSlam(player));
 laserStick.canStart = () => state === 'playing' && player.cd <= 0;
 thrustStick.canStart = () => state === 'playing' && player.charge >= CFG.thrustMinStart;
 // Screen right = world +x, screen down = world +z (camera looks from +z)
@@ -269,7 +350,7 @@ laserStick.onRelease = s => {
 document.addEventListener('contextmenu', e => e.preventDefault());
 
 // ---------- Bot brain ----------
-const ai = { fireWait: 1, thrustT: 0, nextThrust: 2, scan: 0, dir: { x: 0, z: 0 } };
+const ai = { slamScan: 0, fireWait: 1, thrustT: 0, nextThrust: 2, scan: 0, dir: { x: 0, z: 0 } };
 function botThink(dt) {
   // Laser: lead the target a bit, with some aim error
   if (bot.cd <= 0 && !bot.burst) {
@@ -281,6 +362,21 @@ function botThink(dt) {
       ai.fireWait = 0.3 + Math.random() * 1.2;
     }
   }
+  // Flamer: burn whenever the player is inside the cone's reach
+  const pd = Math.hypot(player.x - bot.x, player.z - bot.z);
+  bot.fireDir = null;
+  bot.fireOn = pd < CFG.flameRange + CFG.robotR * 1.5 && (bot.firing || bot.fuel > 0.3);
+  // Slam: jump when the two robots are about to be close at landing time
+  ai.slamScan -= dt;
+  if (ai.slamScan <= 0) {
+    ai.slamScan = 0.1;
+    if (bot.slamCd <= 0 && bot.slamT < 0) {
+      const t = CFG.slamTime;
+      const fd = Math.hypot(player.x + player.vx * t - bot.x - bot.vx * t, player.z + player.vz * t - bot.z - bot.vz * t);
+      if (fd < CFG.slamRadius * 0.7 && Math.random() < 0.5) startSlam(bot);
+    }
+  }
+  if (!CFG.thrustersEnabled) { bot.thrust = null; return; }
   // Thrusters: dodge incoming shots, otherwise occasional random bursts
   if (ai.thrustT > 0) {
     ai.thrustT -= dt;
@@ -315,7 +411,10 @@ let state = 'menu';
 function reset() {
   for (const s of lasers) scene.remove(s.m);
   lasers.length = 0;
+  for (const p of puffs) { p.m.visible = false; puffPool.push(p.m); }
+  puffs.length = 0;
   for (const r of robots) {
+    r.y = 0; r.fuel = 1; r.fuelWait = 0; r.fireOn = false; r.fireDir = null; r.firing = false; r.slamCd = 0; r.slamT = -1;
     const a = (Math.random() * 0.5 + 0.25) * Math.PI * (Math.random() < 0.5 ? 1 : -1);
     r.x = (Math.random() - 0.5) * 4; r.z = r.isPlayer ? HD * 0.55 : -HD * 0.55;
     r.vx = Math.sin(a) * CFG.baseSpeed; r.vz = Math.cos(a) * CFG.baseSpeed * (r.isPlayer ? -1 : 1);
@@ -354,6 +453,34 @@ function stepRobot(r, dt) {
   if (r.x > mx) { r.x = mx; r.vx = -Math.abs(r.vx); } else if (r.x < -mx) { r.x = -mx; r.vx = Math.abs(r.vx); }
   if (r.z > mz) { r.z = mz; r.vz = -Math.abs(r.vz); } else if (r.z < -mz) { r.z = -mz; r.vz = Math.abs(r.vz); }
 
+  // Flamer
+  if (r.fireOn && (r.firing ? r.fuel > 0 : r.fuel >= CFG.flameMinStart)) {
+    r.firing = true;
+    const e = enemyOf(r);
+    let d = r.fireDir;
+    if (!d) { const l = Math.hypot(e.x - r.x, e.z - r.z) || 1; d = { x: (e.x - r.x) / l, z: (e.z - r.z) / l }; }  // no drag: auto-aim
+    r.fuel = Math.max(0, r.fuel - CFG.flameDrain * dt);
+    r.fuelWait = CFG.flameRegenDelay;
+    for (r.fireAcc += dt * 80; r.fireAcc >= 1; r.fireAcc--) spawnPuff(r, d.x, d.z);
+    const rx = e.x - r.x, rz = e.z - r.z, along = rx * d.x + rz * d.z, side = Math.abs(rx * d.z - rz * d.x);
+    const reach = along - CFG.robotR;             // distance past the shooter's edge
+    if (along > 0 && reach < CFG.flameRange + CFG.robotR &&
+        side < CFG.robotR + Math.max(0, reach) * Math.tan(CFG.flameHalfAngle * Math.PI / 180)) {
+      e.hp = Math.max(0, e.hp - CFG.flameDps * dt); e.flash = Math.max(e.flash, 0.5);
+    }
+  } else {
+    r.firing = false;
+    if (!r.fireOn) {                   // no refuel while the button is still held
+      r.fuelWait -= dt;
+      if (r.fuelWait <= 0) r.fuel = Math.min(1, r.fuel + CFG.flameRegen * dt);
+    }
+  }
+  // Slam: hop, then land
+  r.slamCd = Math.max(0, r.slamCd - dt);
+  if (r.slamT >= 0) {
+    r.slamT += dt; const k = r.slamT / CFG.slamTime;
+    if (k >= 1) { r.slamT = -1; r.y = 0; landSlam(r); } else r.y = 4 * CFG.slamHeight * k * (1 - k);
+  }
   // Laser cooldown + burst
   r.cd = Math.max(0, r.cd - dt);
   if (r.burst) {
@@ -372,6 +499,7 @@ function stepRobot(r, dt) {
 
 function collideRobots() {
   const a = player, b = bot;
+  if (a.y > 0.3 || b.y > 0.3) return;   // a slamming robot hops over the other one
   let nx = b.x - a.x, nz = b.z - a.z; const d = Math.hypot(nx, nz), min = CFG.robotR * 2;
   if (d >= min) return;
   if (d < 1e-4) { nx = 1; nz = 0; } else { nx /= d; nz /= d; }
@@ -420,7 +548,7 @@ ui.overlay.addEventListener('pointerup', () => {
 const UP = new THREE.Vector3(0, 1, 0), tmpV = new THREE.Vector3();
 function syncVisuals(time) {
   for (const r of robots) {
-    r.mesh.position.set(r.x, CFG.robotH / 2, r.z);
+    r.mesh.position.set(r.x, CFG.robotH / 2 + r.y, r.z);
     r.mat.emissive.setScalar(r.flash * 0.8);
     r.flame.visible = r.thrusting;
     if (r.thrusting) {
@@ -439,6 +567,10 @@ function syncVisuals(time) {
   ui.hpBot.style.width = (bot.hp / CFG.maxHp * 100) + '%';
   laserStick.knob.style.setProperty('--p', (1 - player.cd / CFG.laserCooldown).toFixed(3));
   laserStick.el.classList.toggle('dim', player.cd > 0);
+  flameStick.knob.style.setProperty('--p', player.fuel.toFixed(3));
+  flameStick.el.classList.toggle('dim', player.fuel < CFG.flameMinStart && !player.firing);
+  slamBtn.knob.style.setProperty('--p', (1 - player.slamCd / CFG.slamCooldown).toFixed(3));
+  slamBtn.el.classList.toggle('dim', player.slamCd > 0);
   thrustStick.knob.style.setProperty('--p', player.charge.toFixed(3));
   thrustStick.el.classList.toggle('dim', player.charge < CFG.thrustMinStart && !player.thrusting);
 }
@@ -449,8 +581,10 @@ function frame(now) {
   const dt = Math.min(0.033, (now - last) / 1000); last = now;
   if (state === 'playing') {
     const sgn = CFG.thrustInvert ? -1 : 1;
-    player.thrust = thrustStick.held && thrustStick.mag > 0
+    player.thrust = CFG.thrustersEnabled && thrustStick.held && thrustStick.mag > 0
       ? { x: thrustStick.x * sgn, z: thrustStick.y * sgn, mag: thrustStick.mag } : null;
+    player.fireOn = flameStick.held;
+    player.fireDir = flameStick.mag > 0 ? { x: flameStick.x, z: flameStick.y } : null;
     botThink(dt);
     stepRobot(player, dt); stepRobot(bot, dt);
     collideRobots();
@@ -458,10 +592,12 @@ function frame(now) {
     if (player.hp <= 0 || bot.hp <= 0) {
       state = 'over'; overlayShownAt = now;
       player.thrusting = bot.thrusting = false;
+      player.firing = bot.firing = false;
       if (bot.hp <= 0) showOverlay('YOU WIN', 'TAP TO PLAY AGAIN', '#2f7df6');
       else showOverlay('YOU LOSE', 'TAP TO PLAY AGAIN', '#f0443e');
     }
   }
+  stepPuffs(dt); stepRings(dt);
   syncVisuals(now / 1000);
   renderer.render(scene, camera);
   requestAnimationFrame(frame);
