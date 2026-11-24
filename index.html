@@ -36,13 +36,13 @@
   #stage canvas { position:absolute; inset:0; width:100%; height:100%; display:block; }
 
   /* Controls: bottom quarter */
-  #controls { flex:0 0 25%; position:relative; display:flex; justify-content:space-around; align-items:center;
+  #controls { flex:0 0 19%; min-height:136px; position:relative; display:flex; justify-content:space-around; align-items:center;
     padding-bottom:env(safe-area-inset-bottom); border-top:2px solid #d9dfe8; background:#eef1f6; }
-  .ability { position:relative; width:150px; height:150px; display:flex; align-items:center; justify-content:center; touch-action:none; }
+  .ability { position:relative; width:130px; height:130px; display:flex; align-items:center; justify-content:center; touch-action:none; }
   .ability .base { position:absolute; inset:0; border-radius:50%; background:rgba(47,125,246,.10);
     border:2px solid rgba(47,125,246,.35); opacity:0; transform:scale(.6); transition:opacity .1s, transform .1s; }
   .ability.active .base { opacity:1; transform:scale(1); }
-  .ability .knob { --p:1; position:relative; width:86px; height:86px; border-radius:50%;
+  .ability .knob { --p:1; position:relative; width:80px; height:80px; border-radius:50%;
     background:conic-gradient(var(--blue) calc(var(--p) * 360deg), var(--muted) 0);
     display:flex; align-items:center; justify-content:center; will-change:transform;
     box-shadow:0 3px 8px rgba(40,60,90,.18); }
@@ -82,13 +82,13 @@
 
 // ---------- Tuning ----------
 const CFG = {
-  arenaW: 10, arenaD: 18, wallH: 0.6, wallT: 0.4,
+  arenaW: 10, arenaD: 20, wallH: 0.6, wallT: 0.4,
   robotR: 0.75, robotH: 0.55,
-  baseSpeed: 5.5,
+  baseSpeed: 2.75,
   // Thrusters
-  thrustForce: 20,          // acceleration while thrusting (units/s^2)
-  thrustMaxSpeed: 9.0,      // raised speed cap while thrusting
-  thrustMinSpeed: 1.8,      // how far you can brake while thrusting
+  thrustForce: 10,          // acceleration while thrusting (units/s^2)
+  thrustMaxSpeed: 4.5,      // raised speed cap while thrusting
+  thrustMinSpeed: 0.9,      // how far you can brake while thrusting
   thrustDrain: 1 / 2.5,     // charge per second while thrusting
   thrustRegen: 1 / 5.0,     // charge per second while released
   thrustRegenDelay: 0.5,
@@ -96,8 +96,10 @@ const CFG = {
   thrustInvert: true,       // true: force is OPPOSITE to drag direction (exhaust points where you drag)
   speedReturn: 25,          // how fast speed snaps back to base after thrust ends
   // Laser
-  laserCooldown: 2.5, laserShots: 5, laserInterval: 0.09,
-  laserSpeed: 22, laserDamage: 6, laserLen: 0.9,
+  laserCooldown: 5, laserShots: 5, laserInterval: 0.09,
+  laserSpeed: 11, laserDamage: 3,
+  laserSpread: 5,           // each shot deviates randomly by up to this many degrees either side
+  laserLen: 0.9,
   maxHp: 100,
   camElevation: 58          // degrees above the floor plane
 };
@@ -225,7 +227,7 @@ function tryLaser(r, dir) {           // dir: {x,z} unit vector, or null = auto-
 // ---------- Input: Brawl-style buttons that turn into joysticks ----------
 function makeStick(el) {
   const knob = el.querySelector('.knob');
-  const R = 60, DEAD = 12;
+  const R = 52, DEAD = 12;
   const s = { held: false, id: null, ox: 0, oy: 0, x: 0, y: 0, mag: 0, dragged: false, onRelease: null, el, knob };
   const set = (px, py) => {
     let dx = px - s.ox, dy = py - s.oy; const d = Math.hypot(dx, dy);
@@ -236,7 +238,7 @@ function makeStick(el) {
     else { s.x = s.y = s.mag = 0; }
   };
   el.addEventListener('pointerdown', e => {
-    if (s.held) return;
+    if (s.held || (s.canStart && !s.canStart())) return;   // unavailable ability: stay a plain button
     e.preventDefault();
     try { el.setPointerCapture(e.pointerId); } catch (_) {}
     s.held = true; s.id = e.pointerId; s.ox = e.clientX; s.oy = e.clientY; s.dragged = false; s.x = s.y = s.mag = 0;
@@ -255,6 +257,8 @@ function makeStick(el) {
 }
 const thrustStick = makeStick(document.getElementById('btnThrust'));
 const laserStick = makeStick(document.getElementById('btnLaser'));
+laserStick.canStart = () => state === 'playing' && player.cd <= 0;
+thrustStick.canStart = () => state === 'playing' && player.charge >= CFG.thrustMinStart;
 // Screen right = world +x, screen down = world +z (camera looks from +z)
 laserStick.onRelease = s => {
   if (state !== 'playing') return;
@@ -357,7 +361,8 @@ function stepRobot(r, dt) {
     while (r.burst && r.burst.t <= 0) {
       let d = r.burst.dir;
       if (!d) { const e = enemyOf(r), l = Math.hypot(e.x - r.x, e.z - r.z) || 1; d = { x: (e.x - r.x) / l, z: (e.z - r.z) / l }; }
-      fireShot(r, d.x, d.z);
+      const sa = (Math.random() * 2 - 1) * CFG.laserSpread * Math.PI / 180, cs = Math.cos(sa), sn = Math.sin(sa);
+      fireShot(r, d.x * cs - d.z * sn, d.x * sn + d.z * cs);
       r.burst.t += CFG.laserInterval;
       if (--r.burst.n <= 0) r.burst = null;
     }
