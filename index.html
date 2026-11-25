@@ -18,7 +18,7 @@
     font-family:-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; color:var(--ink);
     user-select:none; -webkit-user-select:none; -webkit-touch-callout:none; touch-action:manipulation; }
   #app { position:relative; height:100%; width:100%; max-width:calc(100vh * 0.6); margin:0 auto;
-    background:var(--bg); display:flex; flex-direction:column; overflow:hidden; }
+    background:var(--bg); display:flex; flex-direction:column; overflow:hidden; touch-action:none; }
   @media (pointer:coarse), (max-width:600px) { #app { max-width:none; } html, body { background:var(--bg); } }
 
   /* HUD */
@@ -32,7 +32,6 @@
     letter-spacing:.02em; color:#fff; -webkit-text-stroke:3px #1c2533; paint-order:stroke fill; }
   .hp.you .fill { background:var(--blue); }
   .hp.bot .fill { background:var(--red); margin-left:auto; }
-  /* Second HUD row: your passives (left), match score (centre), everything the bot owns (right) */
   #hud2 { flex:0 0 auto; height:26px; padding:0 14px; display:flex; align-items:center; justify-content:space-between; gap:6px; }
   .loadout { flex:1; display:flex; gap:3px; align-items:center; min-width:0; }
   .loadout.right { justify-content:flex-end; }
@@ -48,7 +47,7 @@
   #hud2 .loadout { flex:1 1 0; overflow:hidden; }
 
   /* Arena viewport */
-  #stage { flex:0 1 var(--stageH, 100%); position:relative; min-height:0; }   /* --stageH = height the arena needs at this width */
+  #stage { flex:0 1 var(--stageH, 100%); position:relative; min-height:0; touch-action:none; }
   #stage canvas { position:absolute; inset:0; width:100%; height:100%; display:block; }
 
   /* Rising damage numbers */
@@ -62,41 +61,41 @@
     100% { transform:translate(-50%,-320%) scale(1); opacity:0; }
   }
 
-  /* Controls: energy counter on the left, then the ability buttons (sized by --bs, set from the number of buttons) */
-  #controls { --bs:66px; flex:1 0 calc(104px + env(safe-area-inset-bottom)); position:relative; display:flex; justify-content:flex-start; align-items:flex-start;
-    padding:3px 6px env(safe-area-inset-bottom) 8px; background:var(--bg); }
-  #btnRow { flex:1 1 0; min-width:0; display:flex; justify-content:space-evenly; align-items:flex-start; }
-  /* Energy: the number you have, and a bolt that fills up as the next point arrives */
-  #energyBox { flex:0 0 auto; width:66px; height:var(--bs); display:flex; flex-direction:column; align-items:center; justify-content:center; gap:1px; }
-  #energyBox .row { display:flex; align-items:baseline; gap:4px; }
-  #energyRate { font-size:10px; font-weight:800; color:#9a86c9; white-space:nowrap; }
-  #energyBox .eicon { position:relative; width:30px; height:39px; }
-  #energyBox .eicon svg { position:absolute; inset:0; width:100%; height:100%; }
-  #energyBox .eicon .full { clip-path:inset(calc((1 - var(--f, 0)) * 100%) 0 0 0); }
-  #energyNum { font-size:22px; font-weight:900; line-height:1; color:#7c4ddb; font-variant-numeric:tabular-nums; }
-  #btnThrust { display:none; }   /* thrusters are shelved: CFG.thrustersEnabled brings the button back */
-  .ability { position:relative; width:var(--bs); height:var(--bs); display:flex; align-items:center; justify-content:center; touch-action:none; }
-  .ability .base { position:absolute; inset:-24px; border-radius:50%; background:rgba(47,125,246,.10);
-    border:2px solid rgba(47,125,246,.35); opacity:0; transform:scale(.6); transition:opacity .1s, transform .1s; pointer-events:none; }
-  .ability.active .base { opacity:1; transform:scale(1); }
-  /* Knob: the ring shows availability / cooldown, the inside is the ability's icon on its nature colour */
+  /* Controls panel: the ability buttons are only cooldown readouts now (pushed up against the arena);
+     the rest of the panel is the joystick's space */
+  #controls { --bs:52px; flex:1 0 calc(104px + env(safe-area-inset-bottom)); position:relative; padding:0 6px env(safe-area-inset-bottom); background:var(--bg); touch-action:none; }
+  #btnRow { position:relative; z-index:2; margin-top:-5px; padding-left:4px; display:flex; justify-content:flex-start; align-items:flex-start; flex-wrap:wrap; gap:6px 6px; pointer-events:none; }
+  .ability { position:relative; width:var(--bs); height:var(--bs); display:flex; align-items:center; justify-content:center; pointer-events:none; }
   .ability .knob { --p:1; position:relative; width:calc(var(--bs) - 2px); height:calc(var(--bs) - 2px); border-radius:50%;
     background:conic-gradient(var(--ink) calc(var(--p) * 360deg), var(--muted) 0);
-    display:flex; flex-direction:column; align-items:center; justify-content:center; will-change:transform;
-    box-shadow:0 3px 8px rgba(40,60,90,.2); transition:transform .06s; }
+    display:flex; flex-direction:column; align-items:center; justify-content:center; box-shadow:0 3px 8px rgba(40,60,90,.2); transition:transform .06s; }
   .ability .knob::before { content:""; position:absolute; inset:5px; border-radius:50%; background:linear-gradient(160deg, var(--n1, #fff), var(--n2, #fff)); }
-  .ability .knob svg { position:relative; width:calc(var(--bs) * .42); height:calc(var(--bs) * .42); margin-top:1px; }
-  .ability .knob span { position:relative; font-size:calc(var(--bs) * .125); font-weight:900; letter-spacing:.06em; color:#fff; margin-top:-1px; }
-  .ability.pressed .knob { transform:scale(.88); }
-  #controls.tiny .ability .knob span { display:none; } #controls.tiny .ability .knob svg { width:calc(var(--bs) * .5); height:calc(var(--bs) * .5); }
-  #controls.tiny .ability .cost { font-size:10px; height:16px; padding:0 4px; }
-  /* Energy cost under each button */
-  .ability .cost { position:absolute; bottom:-5px; left:50%; transform:translateX(-50%); z-index:1; pointer-events:none; display:flex; align-items:center; gap:2px;
-    height:19px; padding:0 7px 0 6px; border-radius:10px; background:#8b5cf6; border:2px solid var(--bg); color:#fff; font-size:12px; font-weight:900; white-space:nowrap; }
-  .ability .cost svg { width:7px; height:10px; } .ability .cost small { font-size:7.5px; font-weight:800; }
+  .ability .knob svg { position:relative; width:calc(var(--bs) * .46); height:calc(var(--bs) * .46); }
+  .ability .knob span { display:none; }
+  .ability.pressed .knob { transform:scale(.86); }
+  .ability .cd { position:absolute; bottom:-6px; left:50%; transform:translateX(-50%); z-index:1; display:flex; align-items:center;
+    height:16px; padding:0 6px; border-radius:9px; background:#5b6b82; border:2px solid var(--bg); color:#fff; font-size:10px; font-weight:900; white-space:nowrap; }
   .ability.dim .knob { box-shadow:none; }
-  .ability.dim .knob::before, .ability.dim .knob svg, .ability.dim .knob span { filter:grayscale(1); opacity:.5; }
-  .ability.active .knob { width:calc(var(--bs) * .8); height:calc(var(--bs) * .8); }
+  .ability.dim .knob::before, .ability.dim .knob svg { filter:grayscale(1); opacity:.5; }
+  .ability .left { position:absolute; inset:0; z-index:2; display:none; align-items:center; justify-content:center; font-size:15px; font-weight:900; color:#fff;
+    -webkit-text-stroke:3px #1c2533; paint-order:stroke fill; }
+  .ability.dim .left { display:flex; }
+
+  /* Floating joystick: rests in the middle of the controls panel, jumps to wherever the thumb lands */
+  #joy { position:fixed; left:0; top:0; width:116px; height:116px; margin:-58px 0 0 -58px; border-radius:50%; z-index:5; pointer-events:none;
+    background:rgba(47,125,246,.08); border:2px solid rgba(47,125,246,.28); opacity:.5; transition:opacity .1s; }
+  #joy.on { opacity:1; background:rgba(47,125,246,.12); }
+  #joyKnob { position:absolute; left:50%; top:50%; width:52px; height:52px; margin:-26px 0 0 -26px; border-radius:50%;
+    background:rgba(47,125,246,.6); box-shadow:0 3px 8px rgba(40,60,90,.25); }
+
+  /* Test toggle: bot chases the player relentlessly */
+  #chaseRow { position:absolute; left:10px; bottom:calc(8px + env(safe-area-inset-bottom)); z-index:6; display:flex; align-items:center; gap:6px;
+    padding:3px 10px 3px 6px; border-radius:10px; background:rgba(255,255,255,.75); font-size:11px; touch-action:manipulation; }
+  #chaseRow input { position:absolute; opacity:0; pointer-events:none; }
+  #chaseRow .box { width:16px; height:16px; border-radius:6px; border:2.5px solid #9aa6b6; background:#fff; display:flex; align-items:center; justify-content:center; }
+  #chaseRow input:checked + .box { background:var(--red); border-color:var(--red); }
+  #chaseRow input:checked + .box::after { content:""; width:3px; height:7px; border:solid #fff; border-width:0 2.5px 2.5px 0; transform:translateY(-1px) rotate(45deg); }
+  #chaseRow b { font-weight:900; letter-spacing:.02em; }
 
   /* Draft screen: a handful of big cards, one tap picks */
   #draft { position:absolute; inset:0; z-index:9; background:var(--bg); display:flex; flex-direction:column; align-items:stretch;
@@ -141,11 +140,10 @@
   .card .desc { font-size:11.5px; line-height:1.3; color:#536074; text-align:center; padding:5px 8px 0; }
   .chip { font-size:8.5px; font-weight:800; letter-spacing:.06em; border-radius:6px; padding:2px 5px; background:#e8edf4; color:#5b6b82; white-space:nowrap; }
   .chip.nat { background:var(--n2); color:#fff; }
-  .card .badge { position:absolute; top:-9px; left:-8px; min-width:28px; height:28px; padding:0 5px; border-radius:14px; background:#8b5cf6;
-    border:2.5px solid #fff; box-shadow:0 2px 4px rgba(60,30,120,.35); color:#fff; font-size:14px; font-weight:900;
-    display:flex; align-items:baseline; justify-content:center; line-height:23px; }
-  .card .badge small { font-size:8px; font-weight:800; margin-left:1px; }
-  .card .cdchip { position:absolute; top:4px; right:4px; font-size:9px; font-weight:800; color:#fff; background:rgba(28,37,51,.72); border-radius:7px; padding:1px 5px; }
+  .card .badge { position:absolute; top:-9px; left:-8px; min-width:28px; height:28px; padding:0 7px; border-radius:14px; background:#5b6b82;
+    border:2.5px solid #fff; box-shadow:0 2px 4px rgba(30,40,60,.35); color:#fff; font-size:13px; font-weight:900;
+    display:flex; align-items:center; justify-content:center; white-space:nowrap; }
+  .card .badge small { font-size:9px; font-weight:800; margin-left:1px; }
   .card .owner { display:none; position:absolute; top:16px; left:50%; transform:translateX(-50%) rotate(-7deg); font-size:14px; font-weight:900;
     letter-spacing:.1em; color:#fff; border-radius:8px; padding:2px 12px; border:2px solid #fff; z-index:1; }
   .card.taken .owner { display:block; }
@@ -155,11 +153,10 @@
 
   /* Overlay */
   #overlay { position:absolute; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:center;
-    background:rgba(233,237,243,.82); z-index:10; text-align:center; gap:10px; }
+    background:rgba(233,237,243,.82); z-index:10; text-align:center; gap:10px; touch-action:manipulation; }
   #overlay.hidden { display:none; }
   #overlay h1 { margin:0; font-size:36px; letter-spacing:.04em; }
-  #overlay p { white-space:pre-line; line-height:1.6; }
-  #overlay p { margin:0; font-size:14px; font-weight:600; color:#6b778a; letter-spacing:.06em; }
+  #overlay p { white-space:pre-line; line-height:1.6; margin:0; font-size:14px; font-weight:600; color:#6b778a; letter-spacing:.06em; }
 </style>
 </head>
 <body>
@@ -175,30 +172,24 @@
   </div>
   <div id="stage"></div>
   <div id="controls">
-    <div id="energyBox">
-      <div class="eicon">
-        <svg viewBox="0 0 34 44"><path d="M19 1L3 25h11l-3 18 20-26H19z" fill="#c9d1dc"/></svg>
-        <svg class="full" id="energyIcon" viewBox="0 0 34 44"><path d="M19 1L3 25h11l-3 18 20-26H19z" fill="#8b5cf6"/></svg>
-      </div>
-      <div class="row"><span id="energyRate">+1/s</span><b id="energyNum">0</b></div>
-    </div>
     <div id="btnRow">
-    <div class="ability" id="btnThrust"><div class="base"></div><div class="knob"><span>THRUST</span></div></div>
-    <div class="ability" id="btnFlame"><div class="base"></div><div class="knob"><span>FLAME</span></div></div>
-    <div class="ability tap" id="btnSlam"><div class="knob"><span>SLAM</span></div></div>
-    <div class="ability tap" id="btnShield"><div class="knob"><span>SHIELD</span></div></div>
-    <div class="ability tap" id="btnMine"><div class="knob"><span>MINE</span></div></div>
-    <div class="ability tap" id="btnTurret"><div class="knob"><span>TURRET</span></div></div>
-    <div class="ability tap" id="btnShotgun"><div class="knob"><span>SHOTGUN</span></div></div>
-    <div class="ability tap" id="btnPusher"><div class="knob"><span>PUSHER</span></div></div>
-    <div class="ability tap" id="btnHook"><div class="knob"><span>HOOK</span></div></div>
-    <div class="ability tap" id="btnPistol"><div class="knob"><span>PISTOL</span></div></div>
-    <div class="ability tap" id="btnRail"><div class="knob"><span>RAIL</span></div></div>
-    <div class="ability" id="btnGatling"><div class="base"></div><div class="knob"><span>GATLING</span></div></div>
-    <div class="ability" id="btnMortar"><div class="base"></div><div class="knob"><span>MORTAR</span></div></div>
-    <div class="ability" id="btnLaser"><div class="base"></div><div class="knob"><span>REPEATER</span></div></div>
+      <div class="ability" id="btnFlame"><div class="knob"></div></div>
+      <div class="ability" id="btnSlam"><div class="knob"></div></div>
+      <div class="ability" id="btnShield"><div class="knob"></div></div>
+      <div class="ability" id="btnMine"><div class="knob"></div></div>
+      <div class="ability" id="btnTurret"><div class="knob"></div></div>
+      <div class="ability" id="btnShotgun"><div class="knob"></div></div>
+      <div class="ability" id="btnPusher"><div class="knob"></div></div>
+      <div class="ability" id="btnHook"><div class="knob"></div></div>
+      <div class="ability" id="btnPistol"><div class="knob"></div></div>
+      <div class="ability" id="btnRail"><div class="knob"></div></div>
+      <div class="ability" id="btnGatling"><div class="knob"></div></div>
+      <div class="ability" id="btnMortar"><div class="knob"></div></div>
+      <div class="ability" id="btnLaser"><div class="knob"></div></div>
     </div>
   </div>
+  <label id="chaseRow"><input type="checkbox" id="chaseBox"><span class="box"></span><b>BotChaseOn</b></label>
+  <div id="joy"><div id="joyKnob"></div></div>
   <div id="draft" class="hidden">
     <div class="side bot">
       <div class="av" id="avBot"></div>
@@ -220,7 +211,8 @@
       </div>
     </div>
   </div>
-  <div id="overlay"><h1 id="ovTitle">ROBOT FIGHT</h1><p id="ovSub">TAP TO START</p></div>
+  <div id="overlay"><h1 id="ovTitle">ROBOT FIGHT</h1><p id="ovSub">DRAG TO MOVE · ABILITIES AUTO-FIRE
+TAP TO START</p></div>
 </div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
@@ -229,127 +221,69 @@
 'use strict';
 
 // ---------- Tuning ----------
+// Joystick prototype: you steer, abilities fire on their own when their condition is met and their cooldown is ready.
+// No energy any more: the cooldown is the only limiter, so each cooldown below is balanced against the ability's damage.
 const CFG = {
   arenaW: 10, arenaD: 20, wallH: 0.6, wallT: 0.4,
   robotR: 0.75, robotH: 0.55,
-  baseSpeed: 2.75,
-  // Flamer: short-range continuous cone, paid for with energy
-  flameRange: 3.2,          // reach measured from the robot's edge
-  flameHalfAngle: 16,       // degrees
-  flameDps: 12,
-  flameCost: 4,            // energy per second while firing
-  flameMinStart: 1,         // energy needed to ignite
-  // Slam: tap, hop up, land, damage everything close
-  slamCost: 6,
-  slamSettle: 0.4,          // hidden lockout after landing before the next slam
-  slamTime: 0.5,            // seconds in the air
-  slamHeight: 1.3,
-  slamRadius: 2.5,          // centre-to-centre distance that gets hit on landing
-  slamDamage: 30,
-  // Shield: tap, invulnerable for a while
-  shieldCost: 2,
-  shieldTime: 3,
-  // Mortar: slow lobbed shell, area damage where it lands
-  mortarCost: 7,
-  mortarDamage: 20,
-  mortarRadius: 2.8,        // blast radius drawn on the floor
-  mortarFlight: 1.75,        // seconds in the air, whatever the range
-  mortarHeight: 4,
-  mortarMinRange: 2.5, mortarMaxRange: 12,
-  noAimMortarRadius: 3.5,   // bigger blast for the player's mortar in NoAiming mode (normal is mortarRadius)
-  // Gatling: hold to stream bullets with unlimited range; 
-  gatlingRate: 5,           // shots per second
-  gatlingCost: 1,           // energy per shot (5 per second of fire)
-  gatlingDamage: 3.3,       // was 2 at 3 energy per shot; scaled by 5/3 when the cost became 1 (= 5 old energy)
-  turretDamage: 2,          // turret bullets keep their old damage
-  gatlingSpeed: 14,
-  gatlingLead: 0.5,         // how much of the full lead the auto-aim applies (1 = perfect prediction)
-  gatlingSpread: 13,        // degrees either side
-  // Cooldowns in seconds, on top of the energy cost (0 = energy only). Starts when the ability is used.
-  // Mine: dropped where you stand, arms after a moment, explodes when the enemy rolls over it
-  mineCost: 4,
-  mineSlow: 0.5,            // speed multiplier applied to a robot that hits a mine
-  mineSlowTime: 4,          // seconds the slow lasts
-  mineDamage: 20,
-  mineArm: 1,               // seconds before it becomes live
-  mineTrigger: 0.45,        // extra reach beyond the robot's radius
-  // Turret: dropped where you stand, shoots gatling-strength bullets on its own for a while
-  turretCost: 8,
-  turretLife: 8,
-  turretInterval: 0.75,     // seconds between shots
-  turretRadius: 0.42,       // turrets are solid: robots bounce off them and shots stop on them
-  turretSpread: 6,        // degrees either side
-  // Spikes: passive, every robot-to-robot bump hurts the other robot
-  spikesDamage: 10,
-  // Railgun: tap, one very fast auto-aimed shot. Hard to miss, so it is expensive.
-  railCost: 10,
-  railDamage: 12,
-  railSpeed: 60,
-  // Pistol: tap, one auto-aimed round at moderate speed. Hits hard but the long cooldown makes it a support weapon.
-  pistolCost: 3,
-  pistolDamage: 5,
-  pistolSpeed: 12,
-  // Shotgun: tap, a fan of pellets aimed at where the enemy is right now (no lead). Deadly up close, unreliable at range.
-  shotgunCost: 5,
-  shotgunPellets: 5,
-  shotgunAngle: 5,          // degrees between neighbouring pellets
-  shotgunDamage: 4,         // per pellet
-  shotgunSpeed: 13,
-  // Pusher: tap, a fast shot at the enemy's current position (no lead) that shoves it onto a new course.
-  // The shove acts along the line from the impact point through the robot's centre: a head-on hit turns it
-  // right around, a hit on its flank knocks it sideways.
-  pusherCost: 7,
-  pusherDamage: 8,
-  pusherSpeed: 30,
-  pusherForce: 2,           // shove strength, in multiples of the robot's own speed (2 = exact reversal on a head-on hit)
-  // Hook: tap, throws a hook on a rope. If it lands, the enemy takes a little damage and is turned to head straight at you.
-  hookCost: 3,
-  hookDamage: 5,
-  hookSpeed: 20,
-  hookTug: 0.45,            // seconds the rope stays taut after it lands
-  // Every ability has the same short cooldown (not shown on cards because it is the same everywhere); Shield's is longer and is shown.
-  // For hold abilities (flamer, gatling) it starts when you stop firing.
-  baseCooldown: 4,
-  cooldown: { laser: 4, flame: 4, slam: 4, shield: 15, mortar: 4, gatling: 4, mine: 4, turret: 4, rail: 4, shotgun: 4, pusher: 4, hook: 4, pistol: 10 },
-  // Armor: passive, every hit against you does this much less damage
-  armorReduce: 1,
-  // Ricochet: passive, how many times your shots bounce off walls before disappearing
-  ricochetBounces: 2,
-  // Deflector: passive, chance that a shot (laser, gatling, railgun, turret) bounces off you harmlessly
-  deflectChance: 0.25,
-  // Move Speed: passive, the robot travels this much faster
-  speedBonus: 0.25,
-  // Reactor: passive, energy regenerates this much faster
-  reactorBonus: 0.10,        // per Reactor owned (stacks)
-  // Draft: abilities each side ends up with
-  // Match: a round is one draft pick each plus a fight; first to roundsToWin takes the match
-  roundsToWin: 5,
-  draftOptions: 5,          // cards offered each round
-  notInRound1: ['slam', 'pusher', 'hook', 'pistol'],    // too situational to be someone's only ability (enhancements are excluded from round 1 anyway)
-  // Durability: passive, raises max HP
-  durabilityBonus: 0.25,
-  // Thrusters (shelved: button hidden and bot does not use them while this is false)
-  thrustersEnabled: false,
-  thrustForce: 10,          // acceleration while thrusting (units/s^2)
-  thrustMaxSpeed: 4.5,      // raised speed cap while thrusting
-  thrustMinSpeed: 0.9,      // how far you can brake while thrusting
-  thrustDrain: 1 / 2.5,     // charge per second while thrusting
-  thrustRegen: 1 / 5.0,     // charge per second while released
-  thrustRegenDelay: 0.5,
-  thrustMinStart: 0.12,     // charge needed to (re)ignite
-  thrustInvert: true,       // true: force is OPPOSITE to drag direction (exhaust points where you drag)
-  speedReturn: 25,          // how fast speed snaps back to base after thrust ends
-  // Laser
-  // Energy: one shared pool pays for every ability
-  energyStart: 20,         // energy at the start of every round; there is no upper limit
-  energyRegen: 1,           // per second, added smoothly every frame
-  laserCost: 5,             // per burst
-  laserShots: 4, laserInterval: 0.09,
-  laserSpeed: 9.5, laserDamage: 3,
-  laserSpread: 9,           // each shot deviates randomly by up to this many degrees either side
-  laserLen: 0.9,
+  // Ship-style movement: the stick is engine thrust, not a velocity. Momentum carries you, drag caps the speed,
+  // and changing direction takes a moment. Top speed = thrust / drag; it takes about 1/drag seconds to get there or to turn.
+  thrust: 6,                // acceleration at full stick (units/s^2)
+  drag: 1.8,                // velocity bleeds off at this rate (1/s)
+  wallBounce: 0.3,          // share of your incoming speed that comes back off a wall...
+  wallKick: 3.5,            // ...plus this much extra push from the wall itself (the wall shoves you back)
+  wallCd: 0.3,              // a robot grazing or pressing on a wall is shoved at most this often
+  wallAnim: 0.3, wallPunch: 0.6,   // the wall visibly punches inward by up to this many units, then returns, over this many seconds
+  robotBounce: 4.5,         // when the two robots collide, each is pushed away from the other at this extra speed
+  hitLock: 0.5,             // after a wall or robot bump the stick is ignored for this long, so the deflection is not fought by your own input
+  bumpCd: 0.35,             // at most one bump per this many seconds
+  startDelay: 1.5,          // every ability starts the round on this cooldown, so nobody opens with a full volley
   maxHp: 100,
-  camElevation: 58          // degrees above the floor plane
+  // Cooldown (seconds) per ability. Balanced by measurement: scripted duels where an attacker holds each weapon's preferred range
+  // against a jinking target (damage per second, whole fight): rail 3.0, repeater 1.6 up close and 3.2 from 8.5+ units (it splits at 7.5), gatling 3.1, pistol 2.3, flamer 4.0, shotgun 4.0,
+  // slam 3.8, mortar 3.4 (about 1.2 against a bot that steps out of its zones), turret 3.2, mine 2.0, pusher 1.7 and hook 1.2 (those two are utility).
+  // Guaranteed long-range sits at 3, weapons with spread or slow shots a little under, close-range ones about a third higher.
+  cooldown: { laser: 3, flame: 4, slam: 7, shield: 12, mortar: 6, gatling: 4, mine: 5, turret: 9, rail: 5, shotgun: 4.5, pusher: 6, hook: 7, pistol: 3 },
+  // Repeater: one bolt at the enemy's current position (no lead). After laserSplit units it splits into laserLanes bolts side by side:
+  // a single hit up close, several at range.
+  laserSpeed: 12, laserDamage: 5, laserLen: 0.9, laserRange: 12,
+  laserSplit: 7.5,          // the bolt flies as ONE shot for this far (5 robot widths), then splits
+  laserLanes: 5, laserWidth: 3,   // ...into this many parallel bolts, spread across this total width (2 robot widths)
+  // Flamer: burns for a few seconds while the enemy is in reach, then recharges
+  flameRange: 3.2, flameHalfAngle: 16, flameDps: 10, flameDuration: 3,
+  // Gatling: streams bullets for a couple of seconds while the enemy is within range
+  gatlingRate: 4, gatlingDamage: 3, gatlingSpeed: 14, gatlingLead: 0.5, gatlingSpread: 12, gatlingDuration: 2, gatlingRange: 12,
+  // Slam: hops when the enemy is about to be under the landing spot
+  slamDamage: 30, slamRadius: 2.5, slamTime: 0.5, slamHeight: 1.3, slamSettle: 0.4, slamKnock: 3,
+  // Shield: pops by itself when a meaningful hit is about to land
+  shieldTime: 3, shieldThreat: 8,
+  // Mortar: lobbed at where the enemy is heading
+  mortarDamage: 22, mortarRadius: 3.2, mortarFlight: 1.5, mortarHeight: 4, mortarMinRange: 2.5, mortarMaxRange: 12,
+  // Mine: dropped under you when the enemy is near
+  mineDamage: 20, mineSlow: 0.5, mineSlowTime: 4, mineArm: 1, mineTrigger: 0.45, mineRange: 7, mineMax: 3,
+  // Turret: dropped under you when the enemy is within range
+  turretDamage: 3, turretLife: 8, turretInterval: 0.75, turretRadius: 0.42, turretSpread: 6, turretRange: 10, turretMax: 2,
+  // Spikes: contact hurts the other robot, at most once per interval
+  spikesDamage: 6, spikesInterval: 0.8, spikesKnock: 1.5,
+  // Railgun
+  railDamage: 15, railSpeed: 60, railRange: 14,
+  // Pistol
+  pistolDamage: 7, pistolSpeed: 14, pistolRange: 11,
+  // Shotgun: aimed at where the enemy is right now, so it wants close range
+  shotgunPellets: 5, shotgunAngle: 5, shotgunDamage: 4, shotgunSpeed: 13, shotgunRange: 6,
+  // Pusher: shoves the enemy away
+  pusherDamage: 10, pusherSpeed: 30, pusherKnock: 4, pusherRange: 5.5,
+  // Hook: yanks the enemy toward you
+  hookDamage: 8, hookSpeed: 20, hookTug: 0.45, hookPull: 4, hookMin: 4.5, hookRange: 10,
+  // Passives
+  armorReduce: 1, ricochetBounces: 2, deflectChance: 0.25, speedBonus: 0.15, durabilityBonus: 0.15,
+  overclockBonus: 0.12,     // per Overclock owned: abilities recharge this much faster (stacks)
+  // speedBonus and durabilityBonus above also stack: each copy adds this much again
+  stackable: ['overclock', 'speed', 'durability'],   // these can be drafted again and again; each card can still only be taken by one side per draft
+  // Match
+  roundsToWin: 5, draftOptions: 5,
+  notInRound1: ['slam', 'pusher', 'hook', 'pistol'],
+  camElevation: 58
 };
 const BLUE = 0x2f7df6, RED = 0xf0443e;
 
@@ -380,27 +314,25 @@ Object.assign(sun.shadow.camera, { left: -12, right: 12, top: 12, bottom: -12, n
 sun.shadow.radius = 3;
 scene.add(sun);
 
-// Arena
 const HW = CFG.arenaW / 2, HD = CFG.arenaD / 2;
+const walls = [];
 {
-  const floor = new THREE.Mesh(new THREE.PlaneGeometry(CFG.arenaW, CFG.arenaD),
-    new THREE.MeshLambertMaterial({ color: 0xf7f9fc }));
+  const floor = new THREE.Mesh(new THREE.PlaneGeometry(CFG.arenaW, CFG.arenaD), new THREE.MeshLambertMaterial({ color: 0xf7f9fc }));
   floor.rotation.x = -Math.PI / 2; floor.receiveShadow = true; scene.add(floor);
-
-  const line = new THREE.Mesh(new THREE.PlaneGeometry(CFG.arenaW, 0.06),
-    new THREE.MeshBasicMaterial({ color: 0xdfe5ed }));
+  const line = new THREE.Mesh(new THREE.PlaneGeometry(CFG.arenaW, 0.06), new THREE.MeshBasicMaterial({ color: 0xdfe5ed }));
   line.rotation.x = -Math.PI / 2; line.position.y = 0.005; scene.add(line);
-
   const wallMat = new THREE.MeshLambertMaterial({ color: 0xa9b4c6 });
   const t = CFG.wallT, h = CFG.wallH;
-  const mk = (w, d, x, z) => {
+  // Walls are animated: a wall that hits a robot punches inward and settles back. nx/nz = the way the wall pushes (into the arena).
+  const mk = (w, d, x, z, nx, nz) => {
     const m = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), wallMat);
     m.position.set(x, h / 2, z); m.castShadow = true; m.receiveShadow = true; scene.add(m);
+    walls.push({ m, bx: x, bz: z, nx, nz, t: -1, amp: 0 });
   };
-  mk(CFG.arenaW + 2 * t, t, 0, -HD - t / 2);
-  mk(CFG.arenaW + 2 * t, t, 0,  HD + t / 2);
-  mk(t, CFG.arenaD, -HW - t / 2, 0);
-  mk(t, CFG.arenaD,  HW + t / 2, 0);
+  mk(CFG.arenaW + 2 * t, t, 0, -HD - t / 2, 0, 1);       // 0: far wall (z-)
+  mk(CFG.arenaW + 2 * t, t, 0,  HD + t / 2, 0, -1);      // 1: near wall (z+)
+  mk(t, CFG.arenaD, -HW - t / 2, 0, 1, 0);               // 2: left wall (x-)
+  mk(t, CFG.arenaD,  HW + t / 2, 0, -1, 0);              // 3: right wall (x+)
 }
 
 // Fit the whole arena (incl. walls) inside the stage, whatever its aspect ratio
@@ -417,24 +349,35 @@ function fitCamera() {
     minY = Math.min(minY, v.y); maxY = Math.max(maxY, v.y);
   }
   const cx = (minX + maxX) / 2, cy = (minY + maxY) / 2;
-  let hw = (maxX - minX) / 2 * 1.05, hh = (maxY - minY) / 2 * 1.012;   // side margin for looks; almost none above/below
+  let hw = (maxX - minX) / 2 * 1.05, hh = (maxY - minY) / 2 * 1.012;
   const app = document.getElementById('app');
-  app.style.setProperty('--stageH', Math.ceil(app.clientWidth * hh / hw) + 'px');   // keeps the buttons right under the arena
+  app.style.setProperty('--stageH', Math.ceil(app.clientWidth * hh / hw) + 'px');
   const aspect = w / h;
   if (hw / hh > aspect) hh = hw / aspect; else hw = hh * aspect;
   camera.left = cx - hw; camera.right = cx + hw; camera.top = cy + hh; camera.bottom = cy - hh;
   camera.updateProjectionMatrix();
+  placeJoy();
 }
 new ResizeObserver(fitCamera).observe(stage);
-fitCamera();
+
+function wallPunch(idx, speed) { const w = walls[idx]; w.t = 0; w.amp = Math.min(CFG.wallPunch, 0.25 + speed * 0.08); }
+function stepWalls(dt) {
+  for (const w of walls) {
+    if (w.t < 0) continue;
+    w.t += dt; const k = w.t / CFG.wallAnim;
+    let off = 0;
+    if (k >= 1) w.t = -1;
+    else off = w.amp * (k < 0.2 ? Math.sin(k / 0.2 * Math.PI / 2) : 0.5 * (1 + Math.cos((k - 0.2) / 0.8 * Math.PI)));   // quick punch out, slower settle back
+    w.m.position.set(w.bx + w.nx * off, CFG.wallH / 2, w.bz + w.nz * off);
+  }
+}
 
 // ---------- Robots ----------
 function makeRobot(color, isPlayer) {
   const mat = new THREE.MeshLambertMaterial({ color });
   const mesh = new THREE.Mesh(new THREE.CylinderGeometry(CFG.robotR, CFG.robotR, CFG.robotH, 32), mat);
   mesh.castShadow = true;
-  const cap = new THREE.Mesh(new THREE.CylinderGeometry(CFG.robotR * 0.55, CFG.robotR * 0.55, 0.08, 24),
-    new THREE.MeshLambertMaterial({ color: 0xffffff }));
+  const cap = new THREE.Mesh(new THREE.CylinderGeometry(CFG.robotR * 0.55, CFG.robotR * 0.55, 0.08, 24), new THREE.MeshLambertMaterial({ color: 0xffffff }));
   cap.position.y = CFG.robotH / 2 + 0.04; mesh.add(cap);
   scene.add(mesh);
   const spikes = new THREE.Group(); spikes.visible = false; mesh.add(spikes);
@@ -448,53 +391,44 @@ function makeRobot(color, isPlayer) {
   }
   const slowGeo = new THREE.RingGeometry(0.92, 1.12, 32); slowGeo.rotateX(-Math.PI / 2);
   const slowRing = new THREE.Mesh(slowGeo, new THREE.MeshBasicMaterial({ color: 0x38bdf8, transparent: true, opacity: 0.85 }));
-  slowRing.position.y = -CFG.robotH / 2 + 0.03; slowRing.visible = false; mesh.add(slowRing);     // shown while slowed
+  slowRing.position.y = -CFG.robotH / 2 + 0.03; slowRing.visible = false; mesh.add(slowRing);
   const shield = new THREE.Mesh(new THREE.SphereGeometry(1.1, 24, 16),
     new THREE.MeshBasicMaterial({ color: isPlayer ? 0x7fb4ff : 0xff8f8a, transparent: true, opacity: 0.35, depthWrite: false }));
   shield.visible = false; mesh.add(shield);
-
-  const flame = new THREE.Mesh(new THREE.ConeGeometry(0.28, 0.9, 12),
-    new THREE.MeshBasicMaterial({ color: isPlayer ? 0x7fd0ff : 0xffb37a }));
-  flame.visible = false; scene.add(flame);
-
-  return { isPlayer, color, mesh, mat, flame, shield, spikes, slowRing, slowT: 0, shieldT: 0, abilities: new Set(), x: 0, z: 0, vx: 0, vz: 0, hp: CFG.maxHp,
-    cd: 0, charge: 1, regenWait: 0, burst: null, thrust: null, thrusting: false, flash: 0,
-    y: 0, fuel: 1, fuelWait: 0, fireOn: false, fireDir: null, firing: false, fireAcc: 0, slamCd: 0, slamT: -1 };
+  return { isPlayer, color, mesh, mat, shield, spikes, slowRing, abilities: new Set(), x: 0, z: 0, vx: 0, vz: 0, kx: 0, kz: 0, hp: CFG.maxHp, flash: 0, y: 0 };
 }
 const player = makeRobot(BLUE, true);
 const bot = makeRobot(RED, false);
 const robots = [player, bot];
 const enemyOf = r => (r === player ? bot : player);
+const stacks = (r, id) => (r.stacks && r.stacks[id]) || 0;
+const cdRate = r => 1 + CFG.overclockBonus * stacks(r, 'overclock');
 
-// Aim preview for the laser
-const aimLen = 9;
-const aimGeo = new THREE.PlaneGeometry(0.22, aimLen); aimGeo.rotateX(-Math.PI / 2); aimGeo.translate(0, 0, aimLen / 2);
-const aimLine = new THREE.Mesh(aimGeo, new THREE.MeshBasicMaterial({ color: BLUE, transparent: true, opacity: 0.28 }));
-aimLine.position.y = 0.02; aimLine.visible = false; scene.add(aimLine);
-
-// Aim preview for the flamer: a wedge exactly as long and wide as the area that deals damage
-const flameAimGeo = new THREE.CircleGeometry(CFG.robotR + CFG.flameRange, 16,
-  -CFG.flameHalfAngle * Math.PI / 180, 2 * CFG.flameHalfAngle * Math.PI / 180);
-flameAimGeo.rotateX(-Math.PI / 2);   // lies flat, pointing along +x
-const flameAim = new THREE.Mesh(flameAimGeo, new THREE.MeshBasicMaterial({ color: BLUE, transparent: true, opacity: 0.25, depthWrite: false }));
-flameAim.position.y = 0.02; flameAim.visible = false; scene.add(flameAim);
-
-// Aim preview for the mortar: dotted arc + blast zone
-const arcDots = [];
-{
-  const g = new THREE.SphereGeometry(0.09, 8, 6), mt = new THREE.MeshBasicMaterial({ color: BLUE });
-  for (let i = 0; i < 14; i++) { const d = new THREE.Mesh(g, mt); d.visible = false; scene.add(d); arcDots.push(d); }
+// Where a robot will be in t seconds if it keeps its current velocity (kept inside the arena)
+const clampX = x => Math.max(-(HW - CFG.robotR), Math.min(HW - CFG.robotR, x));
+const clampZ = z => Math.max(-(HD - CFG.robotR), Math.min(HD - CFG.robotR, z));
+function predictPos(r, t) { return { x: clampX(r.x + r.vx * t), z: clampZ(r.z + r.vz * t) }; }
+// Knockback: moves the robot about `dist` units in direction (nx, nz), fading out smoothly
+function knock(e, nx, nz, dist) { const v = dist * CFG.drag; e.vx += nx * v; e.vz += nz * v; }   // an impulse: coasts about `dist` units under drag
+// Unit direction from r to its enemy. With a projectile speed it leads the target.
+function aimAt(r, leadSpeed, leadEff) {
+  const e = enemyOf(r); let tx = e.x, tz = e.z;
+  if (leadSpeed) for (let i = 0; i < 2; i++) { const f = predictPos(e, Math.hypot(tx - r.x, tz - r.z) / leadSpeed); tx = f.x; tz = f.z; }
+  if (leadEff !== undefined) { tx = e.x + (tx - e.x) * leadEff; tz = e.z + (tz - e.z) * leadEff; }
+  const l = Math.hypot(tx - r.x, tz - r.z) || 1;
+  return { x: (tx - r.x) / l, z: (tz - r.z) / l };
 }
-const aimDiscGeo = new THREE.CircleGeometry(1, 48); aimDiscGeo.rotateX(-Math.PI / 2);
-const aimDisc = new THREE.Mesh(aimDiscGeo, new THREE.MeshBasicMaterial({ color: BLUE, transparent: true, opacity: 0.25, depthWrite: false }));
-aimDisc.position.y = 0.02; aimDisc.visible = false; scene.add(aimDisc);
 
-// ---------- Lasers ----------
+// ---------- Cooldowns ----------
+function ready(r, id) { return !(r.cdl[id] > 0); }
+function startCd(r, id) { if (CFG.cooldown[id] > 0) r.cdl[id] = CFG.cooldown[id]; }
+
+// ---------- Shots ----------
 const laserGeo = new THREE.BoxGeometry(0.14, 0.14, CFG.laserLen);
 const laserMats = { true: new THREE.MeshBasicMaterial({ color: 0x4a9bff }), false: new THREE.MeshBasicMaterial({ color: 0xff5a52 }) };
 const lasers = [];
 const bulletGeo = new THREE.BoxGeometry(0.2, 0.2, 0.42);
-function fireShot(r, dx, dz, bullet, from) {      // bullet = gatling round, otherwise a laser shot; from = turret origin
+function fireShot(r, dx, dz, bullet, from) {      // bullet = gatling round, otherwise a repeater shot; from = turret origin
   const m = new THREE.Mesh(bullet ? bulletGeo : laserGeo, laserMats[r.isPlayer]);
   const o = from || { x: r.x, z: r.z, rad: CFG.robotR };
   const off = o.rad + (bullet ? 0.21 : CFG.laserLen / 2), spd = bullet ? CFG.gatlingSpeed : CFG.laserSpeed;
@@ -503,11 +437,25 @@ function fireShot(r, dx, dz, bullet, from) {      // bullet = gatling round, oth
   m.position.set(s.x, CFG.robotH * 0.6, s.z); m.rotation.y = Math.atan2(dx, dz);
   scene.add(m); lasers.push(s);
 }
-function tryLaser(r, dir) {           // dir: {x,z} unit vector, or null = auto-aim at the enemy
-  if (r.energy < CFG.laserCost || r.burst || !ready(r, 'laser')) return false;
-  r.energy -= CFG.laserCost; startCd(r, 'laser');
-  r.burst = { n: CFG.laserShots, t: 0, dir };
+function tryLaser(r) {
+  if (!ready(r, 'laser')) return false;
+  startCd(r, 'laser');
+  const d = aimAt(r, 0), off = CFG.robotR + CFG.laserLen / 2;                    // current position, no lead
+  const m = new THREE.Mesh(laserGeo, laserMats[r.isPlayer]); m.scale.set(1.7, 1.7, 1.3);   // one fat bolt until it splits
+  const s = { m, owner: r, x: r.x + d.x * off, z: r.z + d.z * off, vx: d.x * CFG.laserSpeed, vz: d.z * CFG.laserSpeed, dmg: CFG.laserDamage, split: true, trav: off };      // trav counts from the shooter's centre
+  m.position.set(s.x, CFG.robotH * 0.6, s.z); m.rotation.y = Math.atan2(d.x, d.z);
+  scene.add(m); lasers.push(s);
   return true;
+}
+function splitBolt(s) {                                                         // one bolt becomes laserLanes parallel bolts
+  const sp = Math.hypot(s.vx, s.vz), px = -s.vz / sp, pz = s.vx / sp, n = CFG.laserLanes;
+  for (let k = 0; k < n; k++) {
+    const o = (k - (n - 1) / 2) * CFG.laserWidth / (n - 1);
+    const m = new THREE.Mesh(laserGeo, laserMats[s.owner.isPlayer]); m.rotation.y = Math.atan2(s.vx, s.vz);
+    const b = { m, owner: s.owner, x: s.x + px * o, z: s.z + pz * o, vx: s.vx, vz: s.vz, dmg: CFG.laserDamage, bounced: s.bounced || 0 };
+    m.position.set(b.x, CFG.robotH * 0.6, b.z); scene.add(m); lasers.push(b);
+  }
+  addRing(s.x, s.z, s.owner.color, 1.0);                                        // flash where it splits
 }
 
 // ---------- Flamer particles ----------
@@ -533,25 +481,43 @@ function stepPuffs(dt) {
   }
 }
 
-// ---------- Slam ----------
+// ---------- Slam / Shield ----------
 const ringGeo = new THREE.RingGeometry(0.86, 1, 48); ringGeo.rotateX(-Math.PI / 2);
 const rings = [];
+function addRing(x, z, color, R) {
+  const m = new THREE.Mesh(ringGeo, new THREE.MeshBasicMaterial({ color, transparent: true, opacity: 0.7 }));
+  m.position.set(x, 0.03, z); scene.add(m); rings.push({ m, t: 0, R });
+}
+function stepRings(dt) {
+  for (let i = rings.length - 1; i >= 0; i--) {
+    const g = rings[i]; g.t += dt; const k = g.t / 0.35;
+    if (k >= 1) { scene.remove(g.m); g.m.material.dispose(); rings.splice(i, 1); continue; }
+    g.m.scale.setScalar(0.4 + (g.R - 0.4) * k); g.m.material.opacity = 0.7 * (1 - k);
+  }
+}
 function startSlam(r) {
-  if (r.energy < CFG.slamCost || r.slamCd > 0 || r.slamT >= 0 || !ready(r, 'slam')) return false;
-  r.energy -= CFG.slamCost; startCd(r, 'slam');
-  r.slamCd = CFG.slamTime + CFG.slamSettle; r.slamT = 0;
+  if (r.slamCd > 0 || r.slamT >= 0 || !ready(r, 'slam')) return false;
+  startCd(r, 'slam'); r.slamCd = CFG.slamTime + CFG.slamSettle; r.slamT = 0;
   return true;
+}
+function landSlam(r) {
+  addRing(r.x, r.z, r.color, CFG.slamRadius);
+  const e = enemyOf(r); let nx = e.x - r.x, nz = e.z - r.z; const d = Math.hypot(nx, nz);
+  if (d < CFG.slamRadius && e.y < 0.4 && e.shieldT <= 0) {            // an airborne enemy dodges the shockwave
+    hurt(e, CFG.slamDamage, 1.5);
+    if (d < 1e-3) { nx = 0; nz = r.isPlayer ? -1 : 1; } else { nx /= d; nz /= d; }
+    knock(e, nx, nz, CFG.slamKnock);
+  }
 }
 function startShield(r) {
-  if (r.energy < CFG.shieldCost || !ready(r, 'shield')) return false;
-  r.energy -= CFG.shieldCost; r.shieldT = CFG.shieldTime; startCd(r, 'shield');
+  if (!ready(r, 'shield')) return false;
+  r.shieldT = CFG.shieldTime; startCd(r, 'shield');
   return true;
 }
+
 // All damage goes through here so every hit shows a rising number above the victim.
-// Continuous damage (flamer) is pooled and shown in chunks instead of once per frame.
 const projV = new THREE.Vector3();
 function hurt(e, amt, flash, continuous) {
-  // Armor takes a flat amount off every hit. The flamer deals damage continuously, so there it comes off each 3-point chunk.
   if (e.abilities.has('armor')) amt = continuous ? amt * Math.max(0, 1 - CFG.armorReduce / 3) : Math.max(0, amt - CFG.armorReduce);
   e.hp = Math.max(0, e.hp - amt); e.flash = Math.max(e.flash, flash);
   if (continuous) { e.dmgAcc += amt; if (e.dmgAcc < 3) return; amt = e.dmgAcc; e.dmgAcc = 0; }
@@ -560,17 +526,20 @@ function hurt(e, amt, flash, continuous) {
   el.className = 'dmg'; el.textContent = Math.round(amt);
   el.style.left = ((projV.x + 1) / 2 * stage.clientWidth + (Math.random() - 0.5) * 26) + 'px';
   el.style.top = ((1 - projV.y) / 2 * stage.clientHeight) + 'px';
-  el.style.fontSize = (17 + Math.min(amt, 40) * 0.45) + 'px';     // bigger hits, bigger numbers
+  el.style.fontSize = (17 + Math.min(amt, 40) * 0.45) + 'px';
   el.addEventListener('animationend', () => el.remove());
   stage.appendChild(el);
 }
+
 // ---------- Mines ----------
 const mineGeo = new THREE.CylinderGeometry(0.36, 0.42, 0.14, 20), mineDotGeo = new THREE.SphereGeometry(0.12, 10, 8);
 const mines = [];
 function removeMine(mn) { scene.remove(mn.m); mn.m.material.dispose(); mn.dot.material.dispose(); }
 function startMine(r) {
-  if (r.energy < CFG.mineCost || !ready(r, 'mine')) return false;
-  r.energy -= CFG.mineCost; startCd(r, 'mine');
+  if (!ready(r, 'mine')) return false;
+  startCd(r, 'mine');
+  const own = mines.filter(m => m.owner === r);
+  if (own.length >= CFG.mineMax) { removeMine(own[0]); mines.splice(mines.indexOf(own[0]), 1); }
   const m = new THREE.Mesh(mineGeo, new THREE.MeshLambertMaterial({ color: r.color, transparent: true, opacity: 0.4 }));
   const dot = new THREE.Mesh(mineDotGeo, new THREE.MeshBasicMaterial({ color: 0x1c2533 }));
   dot.position.y = 0.1; m.add(dot); m.position.set(r.x, 0.07, r.z); scene.add(m);
@@ -581,18 +550,32 @@ function stepMines(dt, time) {
   for (let i = mines.length - 1; i >= 0; i--) {
     const mn = mines[i]; mn.t += dt;
     const armed = mn.t >= CFG.mineArm, e = enemyOf(mn.owner);
-    mn.m.material.opacity = armed ? 1 : 0.4;                                   // faint until it is live
-    mn.dot.material.color.setHex(armed && Math.sin(time * 10) > 0 ? 0xffd60a : 0x1c2533);   // live mines blink
+    mn.m.material.opacity = armed ? 1 : 0.4;
+    mn.dot.material.color.setHex(armed && Math.sin(time * 10) > 0 ? 0xffd60a : 0x1c2533);
     if (armed && e.y < 0.4 && Math.hypot(e.x - mn.x, e.z - mn.z) < CFG.robotR + CFG.mineTrigger) {
       addRing(mn.x, mn.z, mn.owner.color, 1.6);
-      if (e.shieldT <= 0) { hurt(e, CFG.mineDamage, 1.5); e.slowT = CFG.mineSlowTime; }   // a shield sets it off harmlessly
+      if (e.shieldT <= 0) { hurt(e, CFG.mineDamage, 1.5); e.slowT = CFG.mineSlowTime; }
       removeMine(mn); mines.splice(i, 1);
     }
   }
 }
 
-// Turrets are obstacles. A robot standing on a turret when it appears (its owner, usually) passes through
-// until it has rolled clear once; after that the turret is solid for it. A slamming robot hops over.
+// ---------- Turrets (solid obstacles; a robot standing on one when it appears passes through until it has rolled clear) ----------
+const turretBaseGeo = new THREE.CylinderGeometry(0.34, 0.4, 0.5, 16), turretBarrelGeo = new THREE.BoxGeometry(0.14, 0.14, 0.6);
+turretBarrelGeo.translate(0, 0, 0.3);
+const turrets = [];
+function removeTurret(t) { scene.remove(t.m); t.m.material.dispose(); }
+function startTurret(r) {
+  if (!ready(r, 'turret')) return false;
+  startCd(r, 'turret');
+  const own = turrets.filter(t => t.owner === r);
+  if (own.length >= CFG.turretMax) { removeTurret(own[0]); turrets.splice(turrets.indexOf(own[0]), 1); }
+  const m = new THREE.Mesh(turretBaseGeo, new THREE.MeshLambertMaterial({ color: r.color })); m.castShadow = true;
+  const barrel = new THREE.Mesh(turretBarrelGeo, new THREE.MeshLambertMaterial({ color: 0x3a4252 })); barrel.position.y = 0.2; m.add(barrel);
+  m.position.set(r.x, 0.25, r.z); scene.add(m);
+  turrets.push({ owner: r, x: r.x, z: r.z, t: 0, shotT: 0.5, m, barrel, solidFor: new Set() });
+  return true;
+}
 function collideTurrets() {
   for (const t of turrets) for (const r of robots) {
     let nx = r.x - t.x, nz = r.z - t.z; const d = Math.hypot(nx, nz), min = CFG.robotR + CFG.turretRadius;
@@ -600,37 +583,15 @@ function collideTurrets() {
     if (!t.solidFor.has(r) || r.y > 0.3) continue;
     if (d < 1e-4) { nx = 1; nz = 0; } else { nx /= d; nz /= d; }
     r.x = t.x + nx * min; r.z = t.z + nz * min;
-    const vn = r.vx * nx + r.vz * nz;
-    if (vn < 0) { r.vx -= 2 * vn * nx; r.vz -= 2 * vn * nz; }      // mirror bounce, speed unchanged
   }
-}
-// Where a robot will be in t seconds if nothing disturbs it (constant speed, bouncing off the walls)
-function foldAxis(v, m) { v = (((v + m) % (4 * m)) + 4 * m) % (4 * m); return (v > 2 * m ? 4 * m - v : v) - m; }
-function predictPos(r, t) {
-  return { x: foldAxis(r.x + r.vx * t, HW - CFG.robotR), z: foldAxis(r.z + r.vz * t, HD - CFG.robotR) };
-}
-
-// ---------- Turrets ----------
-const turretBaseGeo = new THREE.CylinderGeometry(0.34, 0.4, 0.5, 16), turretBarrelGeo = new THREE.BoxGeometry(0.14, 0.14, 0.6);
-turretBarrelGeo.translate(0, 0, 0.3);
-const turrets = [];
-function removeTurret(t) { scene.remove(t.m); t.m.material.dispose(); }
-function startTurret(r) {
-  if (r.energy < CFG.turretCost || !ready(r, 'turret')) return false;
-  r.energy -= CFG.turretCost; startCd(r, 'turret');
-  const m = new THREE.Mesh(turretBaseGeo, new THREE.MeshLambertMaterial({ color: r.color })); m.castShadow = true;
-  const barrel = new THREE.Mesh(turretBarrelGeo, new THREE.MeshLambertMaterial({ color: 0x3a4252 })); barrel.position.y = 0.2; m.add(barrel);
-  m.position.set(r.x, 0.25, r.z); scene.add(m);
-  turrets.push({ owner: r, x: r.x, z: r.z, t: 0, shotT: 0.5, m, barrel, solidFor: new Set() });
-  return true;
 }
 function stepTurrets(dt, time) {
   for (let i = turrets.length - 1; i >= 0; i--) {
     const t = turrets[i]; t.t += dt;
     if (t.t >= CFG.turretLife) { removeTurret(t); turrets.splice(i, 1); continue; }
-    t.m.visible = CFG.turretLife - t.t > 1 || Math.sin(time * 30) > 0;       // blinks before it expires
+    t.m.visible = CFG.turretLife - t.t > 1 || Math.sin(time * 30) > 0;
     const e = enemyOf(t.owner), lead = Math.hypot(e.x - t.x, e.z - t.z) / CFG.gatlingSpeed;
-    const fut = predictPos(e, lead);                                         // leads the target, wall bounces included
+    const fut = predictPos(e, lead);
     const ang = Math.atan2(fut.x - t.x, fut.z - t.z);
     t.barrel.rotation.y = ang;
     t.shotT -= dt;
@@ -641,32 +602,20 @@ function stepTurrets(dt, time) {
     }
   }
 }
-// Per-ability cooldowns
-function ready(r, id) { return !(r.cdl[id] > 0); }
-function startCd(r, id) { if (CFG.cooldown[id] > 0) r.cdl[id] = CFG.cooldown[id]; }
 
 // ---------- Mortar ----------
 const shellGeo = new THREE.SphereGeometry(0.3, 16, 12);
 const discGeo = new THREE.CircleGeometry(1, 48); discGeo.rotateX(-Math.PI / 2);
 const shells = [];
-// Target lock: four arrows that fly in and close on the landing point the moment a shell is fired
 const lockShape = new THREE.Shape(); lockShape.moveTo(0, 0.55); lockShape.lineTo(-0.42, -0.35); lockShape.lineTo(0, -0.12); lockShape.lineTo(0.42, -0.35); lockShape.closePath();
-const lockGeo = new THREE.ShapeGeometry(lockShape); lockGeo.rotateX(-Math.PI / 2);     // flat on the floor, pointing -z
+const lockGeo = new THREE.ShapeGeometry(lockShape); lockGeo.rotateX(-Math.PI / 2);
 const lockMats = { true: new THREE.MeshBasicMaterial({ color: BLUE }), false: new THREE.MeshBasicMaterial({ color: RED }) };
 const LOCK_TIME = 0.5;
-function mortarRange(mag) {            // joystick pull -> throw distance
-  const k = Math.min(1, Math.max(0, (mag - 0.23) / 0.77));
-  return CFG.mortarMinRange + (CFG.mortarMaxRange - CFG.mortarMinRange) * k;
-}
-function mortarTarget(r, dx, dz, dist) {   // landing point, kept in range and inside the arena
-  dist = Math.min(CFG.mortarMaxRange, dist);
-  return { x: Math.min(HW, Math.max(-HW, r.x + dx * dist)), z: Math.min(HD, Math.max(-HD, r.z + dz * dist)) };
-}
 function arcY(k) { return CFG.robotH + 4 * CFG.mortarHeight * k * (1 - k); }
-function tryMortar(r, tx, tz, R) {
-  R = R || CFG.mortarRadius;
-  if (r.energy < CFG.mortarCost || !ready(r, 'mortar')) return false;
-  r.energy -= CFG.mortarCost; startCd(r, 'mortar');
+function tryMortar(r, tx, tz) {
+  if (!ready(r, 'mortar')) return false;
+  startCd(r, 'mortar');
+  const R = CFG.mortarRadius;
   const m = new THREE.Mesh(shellGeo, new THREE.MeshLambertMaterial({ color: r.color })); m.castShadow = true;
   const mark = new THREE.Mesh(discGeo, new THREE.MeshBasicMaterial({ color: r.color, transparent: true, opacity: 0.15, depthWrite: false }));
   mark.position.set(tx, 0.015, tz); mark.scale.setScalar(R);
@@ -684,442 +633,24 @@ function stepShells(dt) {
     if (k < 1) {
       s.m.position.set(s.sx + (s.tx - s.sx) * k, arcY(k), s.sz + (s.tz - s.sz) * k);
       s.mark.material.opacity = 0.12 + 0.2 * k;
-      // arrows start far outside the blast zone, rush in, then sit pulsing on the target until impact
       const q = Math.min(1, s.t / LOCK_TIME), ease = 1 - Math.pow(1 - q, 3);
       const dist = q < 1 ? (s.R + 4) + (0.75 - (s.R + 4)) * ease : 0.75 + 0.12 * Math.sin((s.t - LOCK_TIME) * 12);
       const sc = q < 1 ? 1.6 - 0.6 * ease : 1;
-      for (const a of s.lock.children) { a.position.set(Math.sin(a.rotation.y) * dist, 0, Math.cos(a.rotation.y) * dist); a.scale.setScalar(sc); }       // landing zone darkens as the shell comes down
+      for (const a of s.lock.children) { a.position.set(Math.sin(a.rotation.y) * dist, 0, Math.cos(a.rotation.y) * dist); a.scale.setScalar(sc); }
       continue;
     }
     addRing(s.tx, s.tz, s.owner.color, s.R);
     const e = enemyOf(s.owner);
-    if (Math.hypot(e.x - s.tx, e.z - s.tz) < s.R + CFG.robotR * 0.5 && e.shieldT <= 0) {
-      hurt(e, CFG.mortarDamage, 1.5);
-    }
+    if (Math.hypot(e.x - s.tx, e.z - s.tz) < s.R + CFG.robotR * 0.5 && e.shieldT <= 0) hurt(e, CFG.mortarDamage, 1.5);
     removeShell(s); shells.splice(i, 1);
   }
 }
-function addRing(x, z, color, R) {
-  const m = new THREE.Mesh(ringGeo, new THREE.MeshBasicMaterial({ color, transparent: true, opacity: 0.7 }));
-  m.position.set(x, 0.03, z); scene.add(m); rings.push({ m, t: 0, R });
-}
-function landSlam(r) {
-  addRing(r.x, r.z, r.color, CFG.slamRadius);
-  const e = enemyOf(r); let nx = e.x - r.x, nz = e.z - r.z; const d = Math.hypot(nx, nz);
-  if (d < CFG.slamRadius && e.y < 0.4 && e.shieldT <= 0) {            // an airborne enemy dodges the shockwave
-    hurt(e, CFG.slamDamage, 1.5);
-    if (d < 1e-3) { nx = 0; nz = r.isPlayer ? -1 : 1; } else { nx /= d; nz /= d; }
-    const sp = Math.max(CFG.baseSpeed, Math.hypot(e.vx, e.vz));
-    e.vx = nx * sp; e.vz = nz * sp;                 // knocked straight away from the impact
-  }
-}
-function stepRings(dt) {
-  for (let i = rings.length - 1; i >= 0; i--) {
-    const g = rings[i]; g.t += dt; const k = g.t / 0.35;
-    if (k >= 1) { scene.remove(g.m); g.m.material.dispose(); rings.splice(i, 1); continue; }
-    g.m.scale.setScalar(0.4 + (g.R - 0.4) * k); g.m.material.opacity = 0.7 * (1 - k);
-  }
-}
 
-// ---------- NoAiming (easy mode): every ability is a tap or a hold, the game aims for the player ----------
-const noAim = true;
-// Unit direction from r to its enemy. With a projectile speed it leads the target (wall bounces included).
-function aimAt(r, leadSpeed, leadEff) {
-  const e = enemyOf(r); let tx = e.x, tz = e.z;
-  if (leadSpeed) for (let i = 0; i < 2; i++) { const f = predictPos(e, Math.hypot(tx - r.x, tz - r.z) / leadSpeed); tx = f.x; tz = f.z; }
-  if (leadEff !== undefined) { tx = e.x + (tx - e.x) * leadEff; tz = e.z + (tz - e.z) * leadEff; }   // deliberately imperfect lead
-  const l = Math.hypot(tx - r.x, tz - r.z) || 1;
-  return { x: (tx - r.x) / l, z: (tz - r.z) / l };
-}
-
-// ---------- Input: Brawl-style buttons that turn into joysticks ----------
-function makeStick(el) {
-  const knob = el.querySelector('.knob');
-  const R = 52, DEAD = 12;
-  const s = { held: false, id: null, ox: 0, oy: 0, x: 0, y: 0, mag: 0, dragged: false, onRelease: null, el, knob };
-  const set = (px, py) => {
-    if (noAim) return;                 // NoAiming: the button never turns into a joystick
-    let dx = px - s.ox, dy = py - s.oy; const d = Math.hypot(dx, dy);
-    if (d > DEAD) s.dragged = true;
-    if (d > R) { dx *= R / d; dy *= R / d; }
-    knob.style.transform = `translate(${dx}px,${dy}px)`;
-    if (d > DEAD) { s.x = dx / Math.hypot(dx, dy); s.y = dy / Math.hypot(dx, dy); s.mag = Math.min(1, d / R); }
-    else { s.x = s.y = s.mag = 0; }
-  };
-  el.addEventListener('pointerdown', e => {
-    if (s.held || (s.canStart && !s.canStart())) return;   // unavailable ability: stay a plain button
-    e.preventDefault();
-    try { el.setPointerCapture(e.pointerId); } catch (_) {}
-    s.held = true; s.id = e.pointerId; s.ox = e.clientX; s.oy = e.clientY; s.dragged = false; s.x = s.y = s.mag = 0;
-    el.classList.add(noAim ? 'pressed' : 'active');
-  });
-  el.addEventListener('pointermove', e => { if (s.held && e.pointerId === s.id) set(e.clientX, e.clientY); });
-  const end = (e, cancelled) => {
-    if (!s.held || e.pointerId !== s.id) return;
-    s.held = false; s.id = null; el.classList.remove('active', 'pressed'); knob.style.transform = '';
-    if (!cancelled && s.onRelease) s.onRelease(s);
-    s.x = s.y = s.mag = 0;
-  };
-  el.addEventListener('pointerup', e => end(e, false));
-  el.addEventListener('pointercancel', e => end(e, true));
-  return s;
-}
-const thrustStick = makeStick(document.getElementById('btnThrust'));
-const laserStick = makeStick(document.getElementById('btnLaser'));
-const flameStick = makeStick(document.getElementById('btnFlame'));
-flameStick.canStart = () => state === 'playing' && player.energy >= CFG.flameMinStart && ready(player, 'flame');
-const gatlingStick = makeStick(document.getElementById('btnGatling'));
-gatlingStick.canStart = () => state === 'playing' && player.energy >= CFG.gatlingCost && ready(player, 'gatling');
-const mortarStick = makeStick(document.getElementById('btnMortar'));
-mortarStick.canStart = () => state === 'playing' && player.energy >= CFG.mortarCost && ready(player, 'mortar');
-mortarStick.onRelease = s => {
-  if (state !== 'playing') return;
-  let t = null;
-  if (s.mag > 0) t = mortarTarget(player, s.x, s.y, mortarRange(s.mag));          // aimed: pull distance sets the range
-  else if (!s.dragged) {                                                            // plain tap: lob at the bot's current spot
-    const dx = bot.x - player.x, dz = bot.z - player.z, d = Math.hypot(dx, dz) || 1;
-    t = mortarTarget(player, dx / d, dz / d, d);
-  }
-  if (t) tryMortar(player, t.x, t.z, noAim ? CFG.noAimMortarRadius : 0);   // NoAiming: bot's current spot, bigger blast
-};
-if (CFG.thrustersEnabled) thrustStick.el.style.display = 'flex';
-// Tap-style ability button (no joystick): fires on touch-down
-function makeTap(el, onTap) {
-  const knob = el.querySelector('.knob');
-  el.addEventListener('pointerdown', e => { e.preventDefault(); if (onTap()) { el.classList.add('pressed'); setTimeout(() => el.classList.remove('pressed'), 120); } });
-  return { el, knob };
-}
-const slamBtn = makeTap(document.getElementById('btnSlam'), () => state === 'playing' && startSlam(player));
-const shieldBtn = makeTap(document.getElementById('btnShield'), () => state === 'playing' && startShield(player));
-const mineBtn = makeTap(document.getElementById('btnMine'), () => state === 'playing' && startMine(player));
-const turretBtn = makeTap(document.getElementById('btnTurret'), () => state === 'playing' && startTurret(player));
-const shotgunBtn = makeTap(document.getElementById('btnShotgun'), () => state === 'playing' && startShotgun(player));
-const pusherBtn = makeTap(document.getElementById('btnPusher'), () => state === 'playing' && startPusher(player));
-const hookBtn = makeTap(document.getElementById('btnHook'), () => state === 'playing' && startHook(player));
-const pistolBtn = makeTap(document.getElementById('btnPistol'), () => state === 'playing' && startPistol(player));
-const railBtn = makeTap(document.getElementById('btnRail'), () => state === 'playing' && startRail(player));
-laserStick.canStart = () => state === 'playing' && player.energy >= CFG.laserCost && !player.burst && ready(player, 'laser');
-thrustStick.canStart = () => state === 'playing' && player.charge >= CFG.thrustMinStart;
-// Screen right = world +x, screen down = world +z (camera looks from +z)
-laserStick.onRelease = s => {
-  if (state !== 'playing') return;
-  if (s.mag > 0) tryLaser(player, { x: s.x, z: s.y });       // aimed
-  else if (!s.dragged) tryLaser(player, null);               // plain tap: auto-aim
-  // dragged out and back to the centre: cancelled
-};
-document.addEventListener('contextmenu', e => e.preventDefault());
-
-// ---------- Bot brain ----------
-const ai = { railWait: 1.5, dropWait: 2, gunning: false, mortarWait: 1, shieldScan: 0, slamScan: 0, fireWait: 1, thrustT: 0, nextThrust: 2, scan: 0, dir: { x: 0, z: 0 } };
-function botThink(dt) {
-  // Laser: lead the target a bit, with some aim error
-  const has = id => bot.abilities.has(id);
-  // Shield: raise it when something is about to hurt
-  ai.shieldScan -= dt;
-  if (has('shield') && ai.shieldScan <= 0) {
-    ai.shieldScan = 0.1;
-    if (bot.shieldT <= 0 && bot.energy >= CFG.shieldCost && ready(bot, 'shield')) {
-      const gap = Math.hypot(player.x - bot.x, player.z - bot.z);
-      let threat = (player.firing && gap < CFG.flameRange + CFG.robotR * 2.5) || (player.slamT >= 0 && gap < CFG.slamRadius * 1.3);
-      for (const s of shells)        // a shell about to land nearby
-        if (s.owner === player && s.t > CFG.mortarFlight * 0.6 && Math.hypot(bot.x - s.tx, bot.z - s.tz) < CFG.mortarRadius + 1.5) threat = true;
-      for (const s of lasers) {
-        if (threat) break;
-        if (s.owner !== player) continue;
-        const rx = bot.x - s.x, rz = bot.z - s.z;
-        threat = Math.hypot(rx, rz) < 3 && rx * s.vx + rz * s.vz > 0;
-      }
-      if (threat && Math.random() < 0.6) startShield(bot);
-    }
-  }
-  // Hook: reel the player in when the bot has something that works up close
-  if (has('hook') && bot.energy >= CFG.hookCost + 3 && ready(bot, 'hook') && ['flame', 'shotgun', 'slam', 'spikes', 'mine'].some(has)) {
-    const gap = Math.hypot(player.x - bot.x, player.z - bot.z);
-    if (gap > 4 && Math.random() < dt * 1.2) startHook(bot);
-  }
-  // Pusher: shove the player away when it is close and still closing in
-  if (has('pusher') && bot.energy >= CFG.pusherCost + 1 && ready(bot, 'pusher')) {
-    const rx = player.x - bot.x, rz = player.z - bot.z, gap = Math.hypot(rx, rz);
-    if (gap < 5 && (player.vx - bot.vx) * rx + (player.vz - bot.vz) * rz < 0 && Math.random() < dt * 3) startPusher(bot);
-  }
-  // Shotgun: only worth firing when the player is close
-  if (has('shotgun') && bot.energy >= CFG.shotgunCost + 1 && ready(bot, 'shotgun') &&
-      Math.hypot(player.x - bot.x, player.z - bot.z) < 5.5 && Math.random() < dt * 4) startShotgun(bot);
-  // Pistol: fire whenever it is ready and there is energy to spare
-  if (has('pistol') && bot.energy >= CFG.pistolCost + 2 && ready(bot, 'pistol') && Math.random() < dt * 2) startPistol(bot);
-  // Railgun: an expensive near-certain hit, so the bot waits for a full-ish bar and adds a little aim error
-  if (has('rail') && bot.energy >= CFG.railCost + 3 && ready(bot, 'rail')) {
-    ai.railWait -= dt;
-    if (ai.railWait <= 0) { startRail(bot); ai.railWait = 1 + Math.random() * 2.5; }
-  }
-  // Mine / Turret: drop them now and then, keeping some energy back
-  ai.dropWait -= dt;
-  if (ai.dropWait <= 0) {
-    ai.dropWait = 0.5;
-    if (has('turret') && bot.energy >= CFG.turretCost + 3 && turrets.filter(t => t.owner === bot).length < 2) { startTurret(bot); ai.dropWait = 2; }
-    else if (has('mine') && bot.energy >= CFG.mineCost + 5 && ready(bot, 'mine') && Math.random() < 0.3) { startMine(bot); ai.dropWait = 2 + Math.random() * 3; }
-  }
-  // Mortar: same rule as the player's tap: the player's current position, with the bigger NoAiming blast
-  if (has('mortar') && bot.energy >= CFG.mortarCost + 2 && ready(bot, 'mortar')) {
-    ai.mortarWait -= dt;
-    if (ai.mortarWait <= 0) {
-      const dx = player.x - bot.x, dz = player.z - bot.z, d = Math.hypot(dx, dz) || 1;
-      const tg = mortarTarget(bot, dx / d, dz / d, d);
-      tryMortar(bot, tg.x, tg.z, CFG.noAimMortarRadius);
-      ai.mortarWait = 0.5 + Math.random() * 2;
-    }
-  }
-  // Gatling: fire in bursts (start with a decent reserve, stop when nearly empty). Aim is the game's auto-aim.
-  if (has('gatling')) {
-    if (!ai.gunning && bot.energy > 7) ai.gunning = true;
-    if (ai.gunning && bot.energy < 1.6) ai.gunning = false;
-    bot.gunOn = ai.gunning; bot.gunDir = null;
-  } else bot.gunOn = false;
-  if (has('laser') && bot.energy >= CFG.laserCost + 5 && !bot.burst) {   // keeps a reserve for flamer/slam
-    ai.fireWait -= dt;
-    if (ai.fireWait <= 0) {
-      tryLaser(bot, null);          // auto-aim, exactly as the player's tap
-      ai.fireWait = 0.3 + Math.random() * 1.2;
-    }
-  }
-  // Flamer: burn whenever the player is inside the cone's reach
-  const pd = Math.hypot(player.x - bot.x, player.z - bot.z);
-  bot.fireDir = null;
-  bot.fireOn = has('flame') && pd < CFG.flameRange + CFG.robotR * 1.5 && (bot.firing || bot.energy > 3);
-  // Slam: jump when the two robots are about to be close at landing time
-  ai.slamScan -= dt;
-  if (ai.slamScan <= 0) {
-    ai.slamScan = 0.1;
-    if (has('slam') && bot.energy >= CFG.slamCost && bot.slamCd <= 0 && bot.slamT < 0) {
-      const t = CFG.slamTime;
-      const fd = Math.hypot(player.x + player.vx * t - bot.x - bot.vx * t, player.z + player.vz * t - bot.z - bot.vz * t);
-      if (fd < CFG.slamRadius * 0.7 && Math.random() < 0.5) startSlam(bot);
-    }
-  }
-  if (!CFG.thrustersEnabled) { bot.thrust = null; return; }
-  // Thrusters: dodge incoming shots, otherwise occasional random bursts
-  if (ai.thrustT > 0) {
-    ai.thrustT -= dt;
-    bot.thrust = ai.thrustT > 0 ? { x: ai.dir.x, z: ai.dir.z, mag: 1 } : null;
-    return;
-  }
-  bot.thrust = null;
-  ai.nextThrust -= dt; ai.scan -= dt;
-  if (ai.scan <= 0 && bot.charge > 0.3) {
-    ai.scan = 0.15;
-    for (const s of lasers) {
-      if (s.owner !== player) continue;
-      const rx = bot.x - s.x, rz = bot.z - s.z, d = Math.hypot(rx, rz);
-      if (d > 7) continue;
-      const ux = s.vx / CFG.laserSpeed, uz = s.vz / CFG.laserSpeed;
-      const along = rx * ux + rz * uz, side = rx * -uz + rz * ux;
-      if (along > 0 && Math.abs(side) < 1.6 && Math.random() < 0.6) {
-        const sg = side >= 0 ? 1 : -1;
-        ai.dir = { x: -uz * sg, z: ux * sg }; ai.thrustT = 0.45; return;
-      }
-    }
-  }
-  if (ai.nextThrust <= 0 && bot.charge > 0.6) {
-    const a = Math.random() * Math.PI * 2;
-    ai.dir = { x: Math.sin(a), z: Math.cos(a) };
-    ai.thrustT = 0.4 + Math.random() * 0.6; ai.nextThrust = 1.5 + Math.random() * 3;
-  }
-}
-
-// ---------- Simulation ----------
-let state = 'menu';
-function reset() {
-  for (const s of lasers) scene.remove(s.m);
-  lasers.length = 0;
-  for (const mn of mines) removeMine(mn);
-  mines.length = 0;
-  for (const t of turrets) removeTurret(t);
-  turrets.length = 0;
-  for (const r of robots) r.spikes.visible = r.abilities.has('spikes');
-  for (const h of hooks) removeHook(h);
-  hooks.length = 0;
-  for (const s of shells) removeShell(s);
-  shells.length = 0;
-  for (const p of puffs) { p.m.visible = false; puffPool.push(p.m); }
-  puffs.length = 0;
-  for (const r of robots) {
-    r.gunHot = false; r.slowT = 0; r.dmgAcc = 0; r.gunT = 0; r.gunOn = false; r.gunDir = null; r.gunDry = false;
-    r.energy = CFG.energyStart; r.fireDry = false; r.shieldT = 0; r.cdl = {};
-    r.y = 0; r.fireOn = false; r.fireDir = null; r.firing = false; r.slamCd = 0; r.slamT = -1;
-    const a = (Math.random() * 0.5 + 0.25) * Math.PI * (Math.random() < 0.5 ? 1 : -1);
-    r.x = (Math.random() - 0.5) * 4; r.z = r.isPlayer ? HD * 0.55 : -HD * 0.55;
-    r.vx = Math.sin(a) * CFG.baseSpeed; r.vz = Math.cos(a) * CFG.baseSpeed * (r.isPlayer ? -1 : 1);
-    r.maxHp = Math.round(CFG.maxHp * (r.abilities.has('durability') ? 1 + CFG.durabilityBonus : 1));
-    r.hp = r.maxHp; r.cd = 0; r.charge = 1; r.regenWait = 0; r.burst = null; r.thrust = null; r.thrusting = false; r.flash = 0;
-  }
-  ai.fireWait = 1.2; ai.thrustT = 0; ai.nextThrust = 2;
-}
-
-function stepRobot(r, dt) {
-  // Thrusters
-  const want = r.thrust && r.thrust.mag > 0;
-  if (want && (r.thrusting ? r.charge > 0 : r.charge >= CFG.thrustMinStart)) {
-    r.thrusting = true;
-    r.vx += r.thrust.x * r.thrust.mag * CFG.thrustForce * dt;
-    r.vz += r.thrust.z * r.thrust.mag * CFG.thrustForce * dt;
-    r.charge = Math.max(0, r.charge - CFG.thrustDrain * dt);
-    r.regenWait = CFG.thrustRegenDelay;
-  } else {
-    r.thrusting = false;
-    if (!want) {                       // no recharge while the button is still held
-      r.regenWait -= dt;
-      if (r.regenWait <= 0) r.charge = Math.min(1, r.charge + CFG.thrustRegen * dt);
-    }
-  }
-  // Speed rule: constant speed, except thrusters may push it within [min, max]
-  let sp = Math.hypot(r.vx, r.vz);
-  if (sp < 1e-4) { r.vx = CFG.thrustMinSpeed; r.vz = 0; sp = CFG.thrustMinSpeed; }
-  let target = sp;
-  if (r.thrusting) target = Math.min(CFG.thrustMaxSpeed, Math.max(CFG.thrustMinSpeed, sp));
-  else {
-    const base = CFG.baseSpeed * (r.abilities.has('speed') ? 1 + CFG.speedBonus : 1) * (r.slowT > 0 ? CFG.mineSlow : 1);   // Move Speed passive, mine slow
-    target = sp + (base - sp) * Math.min(1, CFG.speedReturn * dt);
-  }
-  r.slowT = Math.max(0, r.slowT - dt);
-  r.vx *= target / sp; r.vz *= target / sp;
-  // Never travel (almost) parallel to a wall: ease the heading away from the axis so the robots keep crossing paths
-  { const sp2 = Math.hypot(r.vx, r.vz), lim = 0.2 * sp2;     // ~11 degrees
-    if (sp2 > 1e-4 && !r.thrusting) {
-      if (Math.abs(r.vz) < lim) { r.vz += (r.vz === 0 ? (r.x > 0 ? 1 : -1) : Math.sign(r.vz)) * sp2 * 1.5 * dt; }
-      if (Math.abs(r.vx) < lim) { r.vx += (r.vx === 0 ? (r.z > 0 ? 1 : -1) : Math.sign(r.vx)) * sp2 * 1.5 * dt; }
-      const k = sp2 / Math.hypot(r.vx, r.vz); r.vx *= k; r.vz *= k;
-    } }
-
-  // Move + wall bounce
-  r.x += r.vx * dt; r.z += r.vz * dt;
-  const mx = HW - CFG.robotR, mz = HD - CFG.robotR;
-  if (r.x > mx) { r.x = mx; r.vx = -Math.abs(r.vx); } else if (r.x < -mx) { r.x = -mx; r.vx = Math.abs(r.vx); }
-  if (r.z > mz) { r.z = mz; r.vz = -Math.abs(r.vz); } else if (r.z < -mz) { r.z = -mz; r.vz = Math.abs(r.vz); }
-
-  // Energy trickles in every frame
-  // Energy regenerates all the time (uncapped), except while a hold-to-fire ability is firing
-  if (!(r.firing || (r.gunOn && !r.gunDry && ready(r, 'gatling')))) r.energy += CFG.energyRegen * (1 + CFG.reactorBonus * (r.reactors || 0)) * dt;
-  // Flamer (once it runs dry it stays off until the button is released)
-  if (!r.fireOn) r.fireDry = false;
-  for (const id in r.cdl) r.cdl[id] = Math.max(0, r.cdl[id] - dt);
-  if (r.firing && !(r.fireOn && !r.fireDry)) startCd(r, 'flame');
-  if (r.fireOn && !r.fireDry && (r.firing || (r.energy >= CFG.flameMinStart && ready(r, 'flame')))) {
-    r.firing = true;
-    const e = enemyOf(r);
-    let d = r.fireDir;
-    if (!d) { const l = Math.hypot(e.x - r.x, e.z - r.z) || 1; d = { x: (e.x - r.x) / l, z: (e.z - r.z) / l }; }  // no drag: auto-aim
-    r.energy = Math.max(0, r.energy - CFG.flameCost * dt);
-    if (r.energy <= 0) r.fireDry = true;
-    for (r.fireAcc += dt * 80; r.fireAcc >= 1; r.fireAcc--) spawnPuff(r, d.x, d.z);
-    const rx = e.x - r.x, rz = e.z - r.z, along = rx * d.x + rz * d.z, side = Math.abs(rx * d.z - rz * d.x);
-    const reach = along - CFG.robotR;             // distance past the shooter's edge
-    if (e.shieldT <= 0 && along > 0 && reach < CFG.flameRange + CFG.robotR &&
-        side < CFG.robotR + Math.max(0, reach) * Math.tan(CFG.flameHalfAngle * Math.PI / 180)) {
-      hurt(e, CFG.flameDps * dt, 0.5, true);
-    }
-  } else {
-    r.firing = false;
-  }
-  // Gatling: one bullet every 1/rate seconds while held (once out of energy it stays off until released)
-  r.gunT = Math.max(0, r.gunT - dt);
-  if ((!r.gunOn || r.gunDry) && r.gunHot) { r.gunHot = false; startCd(r, 'gatling'); }   // cooldown starts when the stream stops
-  if (!r.gunOn) r.gunDry = false;
-  if (r.gunOn && !r.gunDry && r.gunT <= 0 && ready(r, 'gatling')) {
-    if (r.energy < CFG.gatlingCost) r.gunDry = true;
-    else {
-      r.energy -= CFG.gatlingCost; r.gunT = 1 / CFG.gatlingRate; r.gunHot = true;
-      let d = r.gunDir;
-      if (!d) d = aimAt(r, noAim || !r.isPlayer ? CFG.gatlingSpeed : 0, CFG.gatlingLead);
-      const sa = (Math.random() * 2 - 1) * CFG.gatlingSpread * Math.PI / 180, cs = Math.cos(sa), sn = Math.sin(sa);
-      fireShot(r, d.x * cs - d.z * sn, d.x * sn + d.z * cs, true);
-    }
-  }
-  r.shieldT = Math.max(0, r.shieldT - dt);
-  // Slam: hop, then land
-  r.slamCd = Math.max(0, r.slamCd - dt);
-  if (r.slamT >= 0) {
-    r.slamT += dt; const k = r.slamT / CFG.slamTime;
-    if (k >= 1) { r.slamT = -1; r.y = 0; landSlam(r); } else r.y = 4 * CFG.slamHeight * k * (1 - k);
-  }
-  // Laser cooldown + burst
-  r.cd = Math.max(0, r.cd - dt);
-  if (r.burst) {
-    r.burst.t -= dt;
-    while (r.burst && r.burst.t <= 0) {
-      let d = r.burst.dir;
-      if (!d) d = aimAt(r, noAim || !r.isPlayer ? CFG.laserSpeed : 0);
-      const sa = (Math.random() * 2 - 1) * CFG.laserSpread * Math.PI / 180, cs = Math.cos(sa), sn = Math.sin(sa);
-      fireShot(r, d.x * cs - d.z * sn, d.x * sn + d.z * cs);
-      r.burst.t += CFG.laserInterval;
-      if (--r.burst.n <= 0) r.burst = null;
-    }
-  }
-  r.flash = Math.max(0, r.flash - dt * 6);
-}
-
-function collideRobots() {
-  const a = player, b = bot;
-  if (a.y > 0.3 || b.y > 0.3) return;   // a slamming robot hops over the other one
-  let nx = b.x - a.x, nz = b.z - a.z; const d = Math.hypot(nx, nz), min = CFG.robotR * 2;
-  if (d >= min) return;
-  if (d < 1e-4) { nx = 1; nz = 0; } else { nx /= d; nz /= d; }
-  const push = (min - d) / 2;
-  a.x -= nx * push; a.z -= nz * push; b.x += nx * push; b.z += nz * push;
-  const rel = (b.vx - a.vx) * nx + (b.vz - a.vz) * nz;
-  if (rel < 0) {                        // equal-mass elastic bounce: swap normal components
-    for (const [r, o] of [[a, b], [b, a]])      // Spikes: the bump itself hurts
-      if (r.abilities.has('spikes') && o.shieldT <= 0) hurt(o, CFG.spikesDamage, 1);
-    a.vx += rel * nx; a.vz += rel * nz; b.vx -= rel * nx; b.vz -= rel * nz;
-    // never let a bounce leave a robot stalled: keep them separating at base speed
-    for (const [r, sg] of [[a, -1], [b, 1]]) {
-      const sp = Math.hypot(r.vx, r.vz);
-      if (sp < 0.5) { r.vx = nx * sg * CFG.baseSpeed; r.vz = nz * sg * CFG.baseSpeed; }
-      else if (!r.thrusting) { r.vx *= CFG.baseSpeed / sp; r.vz *= CFG.baseSpeed / sp; }
-    }
-  }
-}
-
-function stepLasers(dt) {
-  for (let i = lasers.length - 1; i >= 0; i--) {
-    const s = lasers[i], e = enemyOf(s.owner);
-    const n = Math.max(1, Math.ceil(Math.hypot(s.vx, s.vz) * dt / 0.6)), h = dt / n;   // sub-steps for fast shots
-    let dead = false;
-    for (let k = 0; k < n && !dead; k++) {
-      s.x += s.vx * h; s.z += s.vz * h;
-      dead = Math.abs(s.x) > HW || Math.abs(s.z) > HD;
-      if (dead && (s.bounced || 0) < CFG.ricochetBounces && s.owner.abilities.has('ricochet')) {     // Ricochet: wall bounces
-        if (Math.abs(s.x) > HW) { s.vx = -s.vx; s.x = Math.sign(s.x) * HW; }
-        if (Math.abs(s.z) > HD) { s.vz = -s.vz; s.z = Math.sign(s.z) * HD; }
-        s.bounced = (s.bounced || 0) + 1; s.m.rotation.y = Math.atan2(s.vx, s.vz); dead = false;
-      }
-      if (!dead) for (const t of turrets)                               // any turret stops any shot
-        if (Math.hypot(t.x - s.x, t.z - s.z) < CFG.turretRadius + 0.1) { dead = true; break; }
-      const hd = Math.hypot(s.x - e.x, s.z - e.z);
-      if (!dead && hd < CFG.robotR + 0.2) {
-        if (e.shieldT <= 0 && e.abilities.has('deflector') && Math.random() < CFG.deflectChance) {
-          // Deflector: the shot bounces off the round body (mirrored about the surface normal) and does no damage
-          const nx = hd > 1e-4 ? (s.x - e.x) / hd : 1, nz = hd > 1e-4 ? (s.z - e.z) / hd : 0, vn = s.vx * nx + s.vz * nz;
-          if (vn < 0) { s.vx -= 2 * vn * nx; s.vz -= 2 * vn * nz; }
-          s.x = e.x + nx * (CFG.robotR + 0.22); s.z = e.z + nz * (CFG.robotR + 0.22);
-          s.m.rotation.y = Math.atan2(s.vx, s.vz);
-          addRing(s.x, s.z, 0xffffff, 0.8);
-        } else {
-          dead = true;
-          if (e.shieldT <= 0) {
-            hurt(e, s.dmg, s.flash || 1);
-            if (s.push) shove(e, hd > 1e-4 ? (e.x - s.x) / hd : 0, hd > 1e-4 ? (e.z - s.z) / hd : 1);
-          }
-        }
-      }
-    }
-    if (dead) { scene.remove(s.m); lasers.splice(i, 1); } else s.m.position.set(s.x, CFG.robotH * 0.6, s.z);
-  }
-}
-// ---------- Shotgun ----------
+// ---------- Shotgun, Pusher, Pistol, Railgun ----------
 function startShotgun(r) {
-  if (r.energy < CFG.shotgunCost || !ready(r, 'shotgun')) return false;
-  r.energy -= CFG.shotgunCost; startCd(r, 'shotgun');
-  const d = aimAt(r, 0), mid = Math.atan2(d.x, d.z), n = CFG.shotgunPellets;      // straight at the enemy's current position
+  if (!ready(r, 'shotgun')) return false;
+  startCd(r, 'shotgun');
+  const d = aimAt(r, 0), mid = Math.atan2(d.x, d.z), n = CFG.shotgunPellets;
   for (let i = 0; i < n; i++) {
     const a = mid + (i - (n - 1) / 2) * CFG.shotgunAngle * Math.PI / 180, dx = Math.sin(a), dz = Math.cos(a);
     const m = new THREE.Mesh(bulletGeo, laserMats[r.isPlayer]);
@@ -1130,16 +661,50 @@ function startShotgun(r) {
   }
   return true;
 }
+const pushGeo = new THREE.SphereGeometry(0.3, 14, 10);
+function startPusher(r) {
+  if (!ready(r, 'pusher')) return false;
+  startCd(r, 'pusher');
+  const d = aimAt(r, 0);
+  const m = new THREE.Mesh(pushGeo, laserMats[r.isPlayer]);
+  const s = { m, owner: r, x: r.x + d.x * (CFG.robotR + 0.3), z: r.z + d.z * (CFG.robotR + 0.3),
+    vx: d.x * CFG.pusherSpeed, vz: d.z * CFG.pusherSpeed, dmg: CFG.pusherDamage, flash: 1.5, push: true };
+  m.position.set(s.x, CFG.robotH * 0.6, s.z);
+  scene.add(m); lasers.push(s);
+  return true;
+}
+const pistolGeo = new THREE.BoxGeometry(0.26, 0.26, 0.7);
+const railGeo = new THREE.BoxGeometry(0.18, 0.18, 2.6);
+const railMats = { true: new THREE.MeshBasicMaterial({ color: 0x9fd0ff }), false: new THREE.MeshBasicMaterial({ color: 0xffb0aa }) };
+function startPistol(r) {
+  if (!ready(r, 'pistol')) return false;
+  startCd(r, 'pistol');
+  const d = aimAt(r, CFG.pistolSpeed), a = Math.atan2(d.x, d.z), dx = Math.sin(a), dz = Math.cos(a);
+  const m = new THREE.Mesh(pistolGeo, railMats[r.isPlayer]);
+  const s = { m, owner: r, x: r.x + dx * (CFG.robotR + 0.3), z: r.z + dz * (CFG.robotR + 0.3), vx: dx * CFG.pistolSpeed, vz: dz * CFG.pistolSpeed, dmg: CFG.pistolDamage };
+  m.position.set(s.x, CFG.robotH * 0.6, s.z); m.rotation.y = a;
+  scene.add(m); lasers.push(s);
+  return true;
+}
+function startRail(r) {
+  if (!ready(r, 'rail')) return false;
+  startCd(r, 'rail');
+  const d = aimAt(r, CFG.railSpeed), a = Math.atan2(d.x, d.z), dx = Math.sin(a), dz = Math.cos(a);
+  const m = new THREE.Mesh(railGeo, railMats[r.isPlayer]);
+  const s = { m, owner: r, x: r.x + dx * (CFG.robotR + 0.3), z: r.z + dz * (CFG.robotR + 0.3), vx: dx * CFG.railSpeed, vz: dz * CFG.railSpeed, dmg: CFG.railDamage, flash: 1.5 };
+  m.position.set(s.x, CFG.robotH * 0.6, s.z); m.rotation.y = a;
+  scene.add(m); lasers.push(s);
+  return true;
+}
+
 // ---------- Hook ----------
-// The hook head flies like a shot; the rope is a string of beads on a curve that starts loose and wavy
-// (thrown) and pulls straight as the hook reaches full stretch, then snaps taut when it catches.
 const hookHeadGeo = new THREE.ConeGeometry(0.2, 0.55, 8); hookHeadGeo.rotateX(Math.PI / 2);
 const ropeGeo = new THREE.SphereGeometry(0.075, 6, 5), ropeMat = new THREE.MeshBasicMaterial({ color: 0x4a5568 });
 const ROPE_BEADS = 26;
 const hooks = [];
 function startHook(r) {
-  if (r.energy < CFG.hookCost || !ready(r, 'hook')) return false;
-  r.energy -= CFG.hookCost; startCd(r, 'hook');
+  if (!ready(r, 'hook')) return false;
+  startCd(r, 'hook');
   const d = aimAt(r, CFG.hookSpeed), e = enemyOf(r);
   const head = new THREE.Mesh(hookHeadGeo, new THREE.MeshLambertMaterial({ color: r.color })); head.castShadow = true;
   head.rotation.y = Math.atan2(d.x, d.z); scene.add(head);
@@ -1153,30 +718,27 @@ function stepHooks(dt) {
   for (let i = hooks.length - 1; i >= 0; i--) {
     const h = hooks[i], r = h.owner, e = enemyOf(r); h.t += dt;
     let dead = false;
-    if (h.caught) {                                   // rope is on: follow the enemy until the tug is over
-      h.tug -= dt; h.x = e.x; h.z = e.z; dead = h.tug <= 0;
-    } else {
+    if (h.caught) { h.tug -= dt; h.x = e.x; h.z = e.z; dead = h.tug <= 0; }
+    else {
       const n = Math.max(1, Math.ceil(CFG.hookSpeed * dt / 0.5));
       for (let k = 0; k < n && !dead && !h.caught; k++) {
         h.x += h.vx * dt / n; h.z += h.vz * dt / n;
-        if (Math.abs(h.x) > HW || Math.abs(h.z) > HD) dead = true;                                      // missed: hit a wall
+        if (Math.abs(h.x) > HW || Math.abs(h.z) > HD) dead = true;
         for (const t of turrets) if (Math.hypot(t.x - h.x, t.z - h.z) < CFG.turretRadius + 0.15) dead = true;
         if (!dead && Math.hypot(e.x - h.x, e.z - h.z) < CFG.robotR + 0.25) {
-          if (e.shieldT > 0) dead = true;                                                               // shield shrugs it off
+          if (e.shieldT > 0) dead = true;
           else {
             hurt(e, CFG.hookDamage, 1.2);
-            // the enemy is yanked onto a course straight at the thrower; the thrower's own course is untouched
-            const dx = r.x - e.x, dz = r.z - e.z, l = Math.hypot(dx, dz) || 1, sp = Math.hypot(e.vx, e.vz) || CFG.baseSpeed;
-            e.vx = dx / l * sp; e.vz = dz / l * sp;
+            const dx = r.x - e.x, dz = r.z - e.z, l = Math.hypot(dx, dz) || 1;
+            knock(e, dx / l, dz / l, Math.max(0, Math.min(CFG.hookPull, l - CFG.robotR * 2)));    // yanked toward the thrower, stops short of it
             h.caught = e; h.tug = CFG.hookTug;
           }
         }
       }
     }
     if (dead) { removeHook(h); hooks.splice(i, 1); continue; }
-    // draw: head at the tip, beads along a sagging, wavy curve from the thrower to the tip
     const ax = r.x, az = r.z, bx = h.x, bz = h.z, len = Math.hypot(bx - ax, bz - az) || 1, px = -(bz - az) / len, pz = (bx - ax) / len;
-    const slack = h.caught ? 0.12 * (h.tug / CFG.hookTug) : Math.max(0.15, 1 - len / h.reach);      // 1 = just thrown, 0 = fully stretched
+    const slack = h.caught ? 0.12 * (h.tug / CFG.hookTug) : Math.max(0.15, 1 - len / h.reach);
     h.head.position.set(bx, CFG.robotH * 0.6, bz); h.head.visible = !h.caught;
     for (let j = 0; j < ROPE_BEADS; j++) {
       const u = (j + 0.5) / ROPE_BEADS, bow = Math.sin(Math.PI * u);
@@ -1185,60 +747,367 @@ function stepHooks(dt) {
     }
   }
 }
-// ---------- Pusher ----------
-const pushGeo = new THREE.SphereGeometry(0.3, 14, 10);
-function startPusher(r) {
-  if (r.energy < CFG.pusherCost || !ready(r, 'pusher')) return false;
-  r.energy -= CFG.pusherCost; startCd(r, 'pusher');
-  const d = aimAt(r, 0);                                    // where the enemy is right now
-  const m = new THREE.Mesh(pushGeo, laserMats[r.isPlayer]);
-  const s = { m, owner: r, x: r.x + d.x * (CFG.robotR + 0.3), z: r.z + d.z * (CFG.robotR + 0.3),
-    vx: d.x * CFG.pusherSpeed, vz: d.z * CFG.pusherSpeed, dmg: CFG.pusherDamage, flash: 1.5, push: true };
-  m.position.set(s.x, CFG.robotH * 0.6, s.z);
-  scene.add(m); lasers.push(s);
-  return true;
+
+// ---------- Auto-fire: every ability has a condition; when it holds and the cooldown is ready, it fires ----------
+// The same rules run for the player and for the bot.
+function threatScore(r) {
+  const e = enemyOf(r); let score = 0;
+  const gap = Math.hypot(e.x - r.x, e.z - r.z);
+  if (e.firing && gap < CFG.flameRange + CFG.robotR * 2.5) score += 8;
+  if (e.slamT >= 0 && gap < CFG.slamRadius * 1.3) score += CFG.slamDamage;
+  for (const s of shells)
+    if (s.owner === e && s.t > CFG.mortarFlight * 0.6 && Math.hypot(r.x - s.tx, r.z - s.tz) < s.R + 1.2) score += CFG.mortarDamage;
+  for (const s of lasers) {
+    if (s.owner !== e) continue;
+    const rx = r.x - s.x, rz = r.z - s.z, sp = Math.hypot(s.vx, s.vz), along = (rx * s.vx + rz * s.vz) / sp, side = Math.abs(rx * -s.vz + rz * s.vx) / sp;
+    if (along > 0 && along < 3.5 && side < CFG.robotR + 0.3) score += s.dmg;
+  }
+  return score;
 }
-// Shove a robot along (nx, nz), then put it back on its normal speed: only its heading changes
-function shove(e, nx, nz) {
-  const sp = Math.hypot(e.vx, e.vz) || CFG.baseSpeed;
-  let vx = e.vx + nx * sp * CFG.pusherForce, vz = e.vz + nz * sp * CFG.pusherForce;
-  const l = Math.hypot(vx, vz);
-  if (l < 1e-3) { vx = nx; vz = nz; } else { vx /= l; vz /= l; }
-  e.vx = vx * sp; e.vz = vz * sp;
-  addRing(e.x, e.z, 0xffffff, 1.3);
-}
-// ---------- Pistol ----------
-const pistolGeo = new THREE.BoxGeometry(0.26, 0.26, 0.7);
-function startPistol(r) {              // auto-aimed with lead, moderate speed
-  if (r.energy < CFG.pistolCost || !ready(r, 'pistol')) return false;
-  r.energy -= CFG.pistolCost; startCd(r, 'pistol');
-  const d = aimAt(r, CFG.pistolSpeed), a = Math.atan2(d.x, d.z), dx = Math.sin(a), dz = Math.cos(a);
-  const m = new THREE.Mesh(pistolGeo, railMats[r.isPlayer]);
-  const s = { m, owner: r, x: r.x + dx * (CFG.robotR + 0.3), z: r.z + dz * (CFG.robotR + 0.3),
-    vx: dx * CFG.pistolSpeed, vz: dz * CFG.pistolSpeed, dmg: CFG.pistolDamage };
-  m.position.set(s.x, CFG.robotH * 0.6, s.z); m.rotation.y = a;
-  scene.add(m); lasers.push(s);
-  return true;
+function autoFire(r, dt) {
+  const e = enemyOf(r), has = id => r.abilities.has(id);
+  const gap = Math.hypot(e.x - r.x, e.z - r.z);
+  r.fireOn = has('flame') && gap < CFG.flameRange + CFG.robotR * 1.6;
+  r.gunOn = has('gatling') && gap < CFG.gatlingRange;
+  if (has('laser') && gap < CFG.laserRange) tryLaser(r);
+  if (has('pistol') && gap < CFG.pistolRange) startPistol(r);
+  if (has('rail') && gap < CFG.railRange) startRail(r);
+  if (has('shotgun') && gap < CFG.shotgunRange) startShotgun(r);
+  if (has('pusher') && gap < CFG.pusherRange) startPusher(r);
+  if (has('hook') && gap > CFG.hookMin && gap < CFG.hookRange) startHook(r);
+  if (has('mine') && gap < CFG.mineRange) startMine(r);
+  if (has('turret') && gap < CFG.turretRange) startTurret(r);
+  if (has('mortar') && ready(r, 'mortar') && gap > CFG.mortarMinRange) {
+    const dx = e.x - r.x, dz = e.z - r.z, d = Math.hypot(dx, dz) || 1, dd = Math.min(CFG.mortarMaxRange, d);
+    tryMortar(r, Math.max(-HW, Math.min(HW, r.x + dx / d * dd)), Math.max(-HD, Math.min(HD, r.z + dz / d * dd)));
+  }
+  if (has('slam') && ready(r, 'slam') && r.slamCd <= 0 && r.slamT < 0 && e.y < 0.4) {       // hop when the enemy will be under the landing spot
+    const t = CFG.slamTime, fd = Math.hypot(e.x + e.vx * t - r.x - r.vx * t, e.z + e.vz * t - r.z - r.vz * t);
+    if (fd < CFG.slamRadius * 0.7) startSlam(r);
+  }
+  r.shieldScan -= dt;
+  if (has('shield') && r.shieldScan <= 0) {                                                // shield up when a real hit is about to land
+    r.shieldScan = 0.08;
+    if (r.shieldT <= 0 && ready(r, 'shield') && threatScore(r) >= CFG.shieldThreat) startShield(r);
+  }
 }
 
-// ---------- Railgun ----------
-const railGeo = new THREE.BoxGeometry(0.18, 0.18, 2.6);
-const railMats = { true: new THREE.MeshBasicMaterial({ color: 0x9fd0ff }), false: new THREE.MeshBasicMaterial({ color: 0xffb0aa }) };
-function startRail(r, err) {           // always auto-aimed (leads the target); err = aim error in radians, used by the bot
-  if (r.energy < CFG.railCost || !ready(r, 'rail')) return false;
-  r.energy -= CFG.railCost; startCd(r, 'rail');
-  const d = aimAt(r, CFG.railSpeed), a = Math.atan2(d.x, d.z) + (err || 0), dx = Math.sin(a), dz = Math.cos(a);
-  const m = new THREE.Mesh(railGeo, railMats[r.isPlayer]);
-  const s = { m, owner: r, x: r.x + dx * (CFG.robotR + 0.3), z: r.z + dz * (CFG.robotR + 0.3),
-    vx: dx * CFG.railSpeed, vz: dz * CFG.railSpeed, dmg: CFG.railDamage, flash: 1.5 };
-  m.position.set(s.x, CFG.robotH * 0.6, s.z); m.rotation.y = a;
-  scene.add(m); lasers.push(s);
-  return true;
+// ---------- Input: floating joystick (plus WASD / arrows for desktop testing) ----------
+const joyEl = document.getElementById('joy'), joyKnob = document.getElementById('joyKnob');
+const joy = { id: null, ox: 0, oy: 0, x: 0, z: 0 };
+const JR = 52, JDEAD = 5;
+function placeJoy() {            // resting spot: middle of the controls panel, below the cooldown buttons
+  if (joy.id !== null) return;
+  const r = document.getElementById('controls').getBoundingClientRect();
+  joyEl.style.left = (r.left + r.width / 2) + 'px'; joyEl.style.top = (r.top + (r.height + 34) / 2) + 'px';
+  joyKnob.style.transform = '';
+}
+const app = document.getElementById('app');
+app.addEventListener('pointerdown', e => {
+  if (state !== 'playing' || joy.id !== null) return;
+  joy.id = e.pointerId; joy.ox = e.clientX; joy.oy = e.clientY; joy.x = joy.z = 0;
+  joyEl.style.left = joy.ox + 'px'; joyEl.style.top = joy.oy + 'px'; joyEl.classList.add('on');
+});
+window.addEventListener('pointermove', e => {
+  if (e.pointerId !== joy.id) return;
+  let dx = e.clientX - joy.ox, dy = e.clientY - joy.oy; const d = Math.hypot(dx, dy);
+  if (d > JR) { dx *= JR / d; dy *= JR / d; }
+  joyKnob.style.transform = `translate(${dx}px,${dy}px)`;
+  joy.x = d > JDEAD ? dx / JR : 0; joy.z = d > JDEAD ? dy / JR : 0;     // screen right = world +x, screen down = world +z
+});
+function endJoy(e) {
+  if (e.pointerId !== joy.id) return;
+  joy.id = null; joy.x = joy.z = 0; joyEl.classList.remove('on'); placeJoy();
+}
+window.addEventListener('pointerup', endJoy);
+window.addEventListener('pointercancel', endJoy);
+const keys = {};
+window.addEventListener('keydown', e => { keys[e.key.toLowerCase()] = true; });
+window.addEventListener('keyup', e => { keys[e.key.toLowerCase()] = false; });
+let inputOverride = null;      // test hook: a function returning {x,z} replaces the joystick
+function playerInput() {
+  if (inputOverride) return inputOverride();
+  let x = joy.x, z = joy.z;
+  if (!x && !z) {
+    x = (keys.d || keys.arrowright ? 1 : 0) - (keys.a || keys.arrowleft ? 1 : 0);
+    z = (keys.s || keys.arrowdown ? 1 : 0) - (keys.w || keys.arrowup ? 1 : 0);
+    const l = Math.hypot(x, z); if (l > 1) { x /= l; z /= l; }
+  }
+  return { x, z };
+}
+document.addEventListener('contextmenu', e => e.preventDefault());
+
+// ---------- Bot movement: keeps the range its weapons like, strafes, dodges shots, stays off the walls ----------
+const ai = { think: 0, ix: 0, iz: 0, dir: 1, dirT: 0, loop: 1, loopT: 0, primary: null, primaryT: 0, mode: '' };
+// How much each weapon is worth (about its measured damage per second), and the distance it likes. Passives and deployables do not set the range.
+const DPSW = { rail: 3, pistol: 2.3, laser: 3, gatling: 3.1, flame: 4, shotgun: 4, slam: 3.8, mortar: 3.4, pusher: 1.7, hook: 1.2 };
+const PREF = { flame: 2.6, shotgun: 3.6, slam: 1.6, pusher: 4.5, hook: 6, laser: 9.5, gatling: 6.5, pistol: 6, rail: 8.5, mortar: 8.5 };
+// Distances inside which an enemy ability hurts (used to decide how far to stay while it is ready)
+const DANGER = { flame: 4.3, shotgun: 6, slam: 3.2 };
+const chaseBox = document.getElementById('chaseBox');
+const chaseRow = document.getElementById('chaseRow');
+chaseRow.addEventListener('pointerdown', e => e.stopPropagation());      // tapping the toggle must not start the joystick
+let botOverride = null;        // test hook
+const botFlags = { kick: true, ram: true };      // test hooks: switch the pinned-escape tricks off
+function botInput(dt) {
+  if (botOverride) return botOverride();
+  if (chaseBox.checked) {                           // BotChaseOn: full thrust straight at the player, no strafing, no dodging
+    const dx = player.x - bot.x, dz = player.z - bot.z, g = Math.hypot(dx, dz) || 1;
+    ai.ix = dx / g; ai.iz = dz / g;
+    return { x: ai.ix, z: ai.iz };
+  }
+  ai.think -= dt;
+  if (ai.think > 0) return { x: ai.ix, z: ai.iz };
+  ai.think = 0.1 + Math.random() * 0.06;
+  const v = botThink(bot, player, ai, 0.13);
+  ai.ix = v.x; ai.iz = v.z;
+  return v;
+}
+// readiness of an ability in the next second or so: 1 ready, 0.6 almost, 0.15 far
+function soon(r, id) { const c = r.cdl[id] || 0; return c <= 0 ? 1 : c < 1 ? 0.6 : 0.15; }
+function botThink(me, foe, S, dtThink) {
+  const dx = foe.x - me.x, dz = foe.z - me.z, gap = Math.hypot(dx, dz) || 1, ux = dx / gap, uz = dz / gap;
+  const mxm = HW - CFG.robotR, mzm = HD - CFG.robotR;
+
+  // 1 + 3: pick the range from the abilities that are (nearly) ready, committing for a moment so it does not flip-flop
+  S.primaryT -= dtThink;
+  let best = null, bestScore = 0, curScore = 0;
+  for (const id of me.abilities) {
+    if (!DPSW[id]) continue;
+    const sc = DPSW[id] * soon(me, id);
+    if (id === S.primary) curScore = sc;
+    if (sc > bestScore) { bestScore = sc; best = id; }
+  }
+  if (best && (S.primaryT <= 0 || !me.abilities.has(S.primary) || bestScore > curScore * 1.4)) { if (best !== S.primary) S.primaryT = 0.8; S.primary = best; curScore = bestScore; }
+  let want = S.primary && me.abilities.has(S.primary) ? PREF[S.primary] : (me.abilities.has('spikes') ? 1.6 : 5);
+  const primaryScore = S.primary && me.abilities.has(S.primary) ? curScore : 0;
+
+  // 2: what the enemy can do to me right now. Stay outside the reach of its ready close-range abilities, unless I am a close fighter myself.
+  let danger = 0;
+  for (const id of foe.abilities) if (DANGER[id] && soon(foe, id) >= 0.6) danger = Math.max(danger, DANGER[id]);
+  if (foe.abilities.has('spikes')) danger = Math.max(danger, 2.2);
+  if (danger > 0 && want < danger + 0.8 && !(want <= 3.6 && primaryScore >= 2.4)) want = danger + 1.2;
+  // 3: cooldown / HP awareness
+  if (best && soon(me, best) < 0.5) want = Math.max(want, danger + 1.5, 6.5);          // every weapon recharging: back off to a safe distance
+  const myFrac = me.hp / me.maxHp, foeFrac = foe.hp / foe.maxHp;
+  if (myFrac < 0.3 && myFrac < foeFrac) want += 2;                  // hurt and behind: keep away
+  else if (foeFrac < 0.25 && primaryScore >= 2) want = Math.min(want, 4);   // enemy nearly dead and my weapon is ready: go for it
+  want = Math.max(1.5, Math.min(10.5, want));
+
+  // 4: orbit the enemy instead of backing away in a line. Pick the direction with more room, and keep it for a while.
+  S.dirT -= dtThink;
+  const room = sg => {                                          // distance to the nearest wall, three units along the orbit direction
+    const px = me.x + (-uz * sg) * 3, pz = me.z + (ux * sg) * 3;
+    return Math.min(mxm - Math.abs(px), mzm - Math.abs(pz));
+  };
+  const rA = room(1), rB = room(-1);
+  if (S.dirT <= 0 || (S.dir === 1 ? rA : rB) < 0.6) {
+    const ndir = rA >= rB ? 1 : -1;
+    if (ndir !== S.dir) S.dirT = 1.4; else S.dirT = 0.5;
+    S.dir = ndir;
+  }
+  const radial = Math.max(-1, Math.min(1, (gap - want) / 2.5));
+  const tang = Math.abs(gap - want) < 2.5 ? 0.85 : 0.55;
+  let vx = ux * radial - uz * S.dir * tang, vz = uz * radial + ux * S.dir * tang;
+  if (gap < want - 0.5 && want > 3) {
+    // Being pressed and wanting more room: a straight retreat ends in a corner, and orbiting the enemy does not gain distance against an equally fast chaser.
+    // Run a big loop around the arena instead (an ellipse hugging the walls), in whichever direction leads away from the enemy.
+    const a = HW - 1.4, b = HD - 1.8, ex = me.x / a, ez = me.z / b, rho = Math.hypot(ex, ez) || 1e-3;
+    let tx = -a * ez / b, tz = b * ex / a; const tl = Math.hypot(tx, tz) || 1; tx /= tl; tz /= tl;     // tangent, counter-clockwise
+    S.loopT -= dtThink;
+    const away = -(tx * ux + tz * uz);                                                              // > 0: counter-clockwise leads away from the enemy
+    if (S.loopT <= 0 || (S.loop > 0 ? away : -away) < -0.3) { const nl = away >= 0 ? 1 : -1; if (nl !== S.loop) S.loopT = 1.2; else S.loopT = 0.4; S.loop = nl; }
+    const pull = Math.max(-0.6, Math.min(1.2, (rho - 0.85) * 2.5));                                // inward when too close to the wall, outward when too central
+    vx = -ux * 0.6 + tx * S.loop * 0.95 - ex / rho * pull * 0.9;
+    vz = -uz * 0.6 + tz * S.loop * 0.95 - ez / rho * pull * 0.9;
+  }
+  const mx = HW - 2.6, mz = HD - 3.4;                                                     // walls push back
+  vx += (Math.max(0, -mx - me.x) - Math.max(0, me.x - mx)) * 1.5;
+  vz += (Math.max(0, -mz - me.z) - Math.max(0, me.z - mz)) * 1.5;
+  for (const s of lasers) {                                                               // sidestep incoming shots
+    if (s.owner !== foe || Math.random() > 0.65) continue;
+    const rx = me.x - s.x, rz = me.z - s.z, sp = Math.hypot(s.vx, s.vz), vxn = s.vx / sp, vzn = s.vz / sp;
+    const along = rx * vxn + rz * vzn, side = rx * -vzn + rz * vxn;
+    if (along > 0 && along < 6 && Math.abs(side) < 1.3) { const sg = side >= 0 ? 1 : -1; vx += -vzn * sg * 1.6; vz += vxn * sg * 1.6; }
+  }
+  for (const mn of mines) {                                                               // go round enemy mines
+    if (mn.owner !== foe) continue;
+    const d = Math.hypot(me.x - mn.x, me.z - mn.z);
+    if (d < 2) { vx += (me.x - mn.x) / (d || 1) * 2; vz += (me.z - mn.z) / (d || 1) * 2; }
+  }
+  for (const s of shells) {                                                               // leave a mortar's landing zone
+    if (s.owner !== foe) continue;
+    const d = Math.hypot(me.x - s.tx, me.z - s.tz);
+    if (d < s.R + 1) { vx += (me.x - s.tx) / (d || 1) * 2; vz += (me.z - s.tz) / (d || 1) * 2; }
+  }
+  if (foe.slamT >= 0 && gap < CFG.slamRadius + 1) { vx -= ux * 2; vz -= uz * 2; }
+  let m = Math.hypot(vx, vz); if (m > 1) { vx /= m; vz /= m; }
+
+  // 5: pinned against a wall by a robot that is closing in: use the wall's kick or ram it, instead of waiting to be caught
+  S.mode = '';
+  const closing = -((foe.vx - me.vx) * ux + (foe.vz - me.vz) * uz);
+  if (me.lockT <= 0 && want > gap + 0.8 && gap < 3.4 && closing > 0.8) {
+    let kick = null, kd = 0.55;
+    for (const [mar, nx, nz] of [[mxm - me.x, -1, 0], [mxm + me.x, 1, 0], [mzm - me.z, 0, -1], [mzm + me.z, 0, 1]]) {   // margin to each wall, its inward normal
+      const dot = nx * ux + nz * uz;
+      if (mar < 1.4 && me.wallCd <= 0 && dot < kd) { kd = dot; kick = [nx, nz]; }
+    }
+    const behindX = me.x - ux * 2, behindZ = me.z - uz * 2;
+    const backBlocked = Math.abs(behindX) > mxm || Math.abs(behindZ) > mzm;
+    if (kick && botFlags.kick) { vx = -kick[0]; vz = -kick[1]; S.mode = 'kick'; }                         // thrust into the wall that throws me sideways, away from the enemy
+    else if (backBlocked && botFlags.ram && !foe.abilities.has('spikes')) { vx = ux; vz = uz; S.mode = 'ram'; }   // nowhere to retreat: meet it head-on, the bump pushes us apart
+  }
+  return { x: vx, z: vz };
+}
+
+// ---------- Simulation ----------
+let state = 'menu';
+function reset() {
+  for (const s of lasers) scene.remove(s.m);
+  lasers.length = 0;
+  for (const mn of mines) removeMine(mn);
+  mines.length = 0;
+  for (const t of turrets) removeTurret(t);
+  turrets.length = 0;
+  for (const h of hooks) removeHook(h);
+  hooks.length = 0;
+  for (const s of shells) removeShell(s);
+  shells.length = 0;
+  for (const p of puffs) { p.m.visible = false; puffPool.push(p.m); }
+  puffs.length = 0;
+  for (const r of robots) {
+    r.spikes.visible = r.abilities.has('spikes');
+    r.gunHot = false; r.gunLeft = 0; r.gunT = 0; r.gunOn = false; r.fireOn = false; r.firing = false; r.flameLeft = 0; r.fireAcc = 0;
+    r.slowT = 0; r.wallCd = 0; r.lockT = 0; r.dmgAcc = 0; r.shieldT = 0; r.shieldScan = 0; r.spikeCd = 0; r.burst = null; r.flash = 0;
+    r.y = 0; r.slamCd = 0; r.slamT = -1; r.vx = r.vz = 0;
+    r.cdl = {}; for (const id of r.abilities) if (CFG.cooldown[id] > 0) r.cdl[id] = CFG.startDelay;
+    r.x = 0; r.z = r.isPlayer ? HD * 0.55 : -HD * 0.55;
+    r.maxHp = Math.round(CFG.maxHp * (1 + CFG.durabilityBonus * stacks(r, 'durability')));
+    r.hp = r.maxHp;
+  }
+  ai.think = 0; ai.ix = ai.iz = 0; bumpT = 0;
+  for (const w of walls) { w.t = -1; w.m.position.set(w.bx, CFG.wallH / 2, w.bz); }
+}
+
+function stepRobot(r, dt, ix, iz) {
+  // Steering: the stick pushes (thrust), drag pulls back; speed passive / mine slow scale the thrust, and so the top speed
+  const th = CFG.thrust * (1 + CFG.speedBonus * stacks(r, 'speed')) * (r.slowT > 0 ? CFG.mineSlow : 1);
+  if (r.lockT <= 0) { r.vx += ix * th * dt; r.vz += iz * th * dt; }      // just bumped or hit a wall: stick ignored until the lock runs out
+
+  const dg = Math.exp(-CFG.drag * dt); r.vx *= dg; r.vz *= dg;
+  r.slowT = Math.max(0, r.slowT - dt); r.spikeCd = Math.max(0, r.spikeCd - dt);
+  r.x += r.vx * dt; r.z += r.vz * dt;
+  const mx = HW - CFG.robotR, mz = HD - CFG.robotR;
+  r.wallCd = Math.max(0, r.wallCd - dt); r.lockT = Math.max(0, r.lockT - dt);
+  // Walls shove back: the incoming speed partly returns, plus a fixed kick from the wall; the wall itself punches inward (animated)
+  const hitWall = (idx, nx, nz) => {
+    const vn = r.vx * nx + r.vz * nz;               // speed along the inward normal (negative = still heading into the wall)
+    if (r.wallCd <= 0) {
+      const out = Math.max(vn, Math.max(0, -vn) * CFG.wallBounce + CFG.wallKick);
+      r.vx += nx * (out - vn); r.vz += nz * (out - vn);
+      r.wallCd = CFG.wallCd; r.lockT = CFG.hitLock; wallPunch(idx, Math.max(0, -vn));
+    } else if (vn < 0) { r.vx -= nx * vn; r.vz -= nz * vn; }
+  };
+  if (r.x > mx) { r.x = mx; hitWall(3, -1, 0); } else if (r.x < -mx) { r.x = -mx; hitWall(2, 1, 0); }
+  if (r.z > mz) { r.z = mz; hitWall(1, 0, -1); } else if (r.z < -mz) { r.z = -mz; hitWall(0, 0, 1); }
+
+  const cr = cdRate(r);
+  for (const id in r.cdl) r.cdl[id] = Math.max(0, r.cdl[id] - dt * cr);
+
+  // Flamer: ignites when the enemy is in reach and it is ready, then burns for the full flameDuration, then recharges
+  if (r.firing) {
+    r.flameLeft -= dt;
+    if (r.flameLeft <= 0) { r.firing = false; startCd(r, 'flame'); }        // once lit it burns its full duration, whatever the range
+  } else if (r.fireOn && ready(r, 'flame')) { r.firing = true; r.flameLeft = CFG.flameDuration; }
+  if (r.firing) {
+    const e = enemyOf(r), l = Math.hypot(e.x - r.x, e.z - r.z) || 1, d = { x: (e.x - r.x) / l, z: (e.z - r.z) / l };
+    for (r.fireAcc += dt * 80; r.fireAcc >= 1; r.fireAcc--) spawnPuff(r, d.x, d.z);
+    const rx = e.x - r.x, rz = e.z - r.z, along = rx * d.x + rz * d.z, side = Math.abs(rx * d.z - rz * d.x), reach = along - CFG.robotR;
+    if (e.shieldT <= 0 && along > 0 && reach < CFG.flameRange + CFG.robotR &&
+        side < CFG.robotR + Math.max(0, reach) * Math.tan(CFG.flameHalfAngle * Math.PI / 180)) hurt(e, CFG.flameDps * dt, 0.5, true);
+  }
+  // Gatling: streams for gatlingDuration while the enemy is in range, then recharges
+  r.gunT = Math.max(0, r.gunT - dt);
+  if (r.gunHot) {
+    r.gunLeft -= dt;
+    if (!r.gunOn || r.gunLeft <= 0) { r.gunHot = false; startCd(r, 'gatling'); }
+  } else if (r.gunOn && ready(r, 'gatling')) { r.gunHot = true; r.gunLeft = CFG.gatlingDuration; }
+  if (r.gunHot && r.gunT <= 0) {
+    r.gunT = 1 / CFG.gatlingRate;
+    const d = aimAt(r, CFG.gatlingSpeed, CFG.gatlingLead);
+    const sa = (Math.random() * 2 - 1) * CFG.gatlingSpread * Math.PI / 180, cs = Math.cos(sa), sn = Math.sin(sa);
+    fireShot(r, d.x * cs - d.z * sn, d.x * sn + d.z * cs, true);
+  }
+  r.shieldT = Math.max(0, r.shieldT - dt);
+  r.slamCd = Math.max(0, r.slamCd - dt);
+  if (r.slamT >= 0) {
+    r.slamT += dt; const k = r.slamT / CFG.slamTime;
+    if (k >= 1) { r.slamT = -1; r.y = 0; landSlam(r); } else r.y = 4 * CFG.slamHeight * k * (1 - k);
+  }
+  r.flash = Math.max(0, r.flash - dt * 6);
+}
+
+let bumpT = 0;
+function collideRobots() {
+  const a = player, b = bot;
+  if (a.y > 0.3 || b.y > 0.3) return;               // a slamming robot hops over the other one
+  let nx = b.x - a.x, nz = b.z - a.z; const d = Math.hypot(nx, nz), min = CFG.robotR * 2;
+  if (d >= min) return;
+  if (d < 1e-4) { nx = 1; nz = 0; } else { nx /= d; nz /= d; }
+  const push = (min - d) / 2;
+  a.x = clampX(a.x - nx * push); a.z = clampZ(a.z - nz * push); b.x = clampX(b.x + nx * push); b.z = clampZ(b.z + nz * push);
+  if (bumpT <= 0) {                                 // a bump: swap the closing speed (elastic), then both fly apart, and both lose steering for a moment
+    const rel = (b.vx - a.vx) * nx + (b.vz - a.vz) * nz;
+    if (rel < 0) { a.vx += rel * nx; a.vz += rel * nz; b.vx -= rel * nx; b.vz -= rel * nz; }
+    a.vx -= nx * CFG.robotBounce; a.vz -= nz * CFG.robotBounce; b.vx += nx * CFG.robotBounce; b.vz += nz * CFG.robotBounce;
+    a.lockT = b.lockT = CFG.hitLock; bumpT = CFG.bumpCd;
+    addRing((a.x + b.x) / 2, (a.z + b.z) / 2, 0xffffff, 1.4);
+  }
+  for (const [r, o, sg] of [[a, b, 1], [b, a, -1]])    // Spikes: contact hurts, at most once per interval
+    if (r.abilities.has('spikes') && r.spikeCd <= 0 && o.shieldT <= 0) {
+      hurt(o, CFG.spikesDamage, 1); r.spikeCd = CFG.spikesInterval;
+    }
+}
+
+function stepLasers(dt) {
+  for (let i = lasers.length - 1; i >= 0; i--) {
+    const s = lasers[i], e = enemyOf(s.owner);
+    const n = Math.max(1, Math.ceil(Math.hypot(s.vx, s.vz) * dt / 0.6)), h = dt / n;
+    let dead = false;
+    for (let k = 0; k < n && !dead; k++) {
+      s.x += s.vx * h; s.z += s.vz * h;
+      if (s.split) { s.trav += Math.hypot(s.vx, s.vz) * h; if (s.trav >= CFG.laserSplit) { splitBolt(s); dead = true; break; } }
+      dead = Math.abs(s.x) > HW || Math.abs(s.z) > HD;
+      if (dead && (s.bounced || 0) < CFG.ricochetBounces && s.owner.abilities.has('ricochet')) {
+        if (Math.abs(s.x) > HW) { s.vx = -s.vx; s.x = Math.sign(s.x) * HW; }
+        if (Math.abs(s.z) > HD) { s.vz = -s.vz; s.z = Math.sign(s.z) * HD; }
+        s.bounced = (s.bounced || 0) + 1; s.m.rotation.y = Math.atan2(s.vx, s.vz); dead = false;
+      }
+      if (!dead) for (const t of turrets)
+        if (Math.hypot(t.x - s.x, t.z - s.z) < CFG.turretRadius + 0.1) { dead = true; break; }
+      const hd = Math.hypot(s.x - e.x, s.z - e.z);
+      if (!dead && hd < CFG.robotR + 0.2) {
+        if (e.shieldT <= 0 && e.abilities.has('deflector') && Math.random() < CFG.deflectChance) {
+          const nx = hd > 1e-4 ? (s.x - e.x) / hd : 1, nz = hd > 1e-4 ? (s.z - e.z) / hd : 0, vn = s.vx * nx + s.vz * nz;
+          if (vn < 0) { s.vx -= 2 * vn * nx; s.vz -= 2 * vn * nz; }
+          s.x = e.x + nx * (CFG.robotR + 0.22); s.z = e.z + nz * (CFG.robotR + 0.22);
+          s.m.rotation.y = Math.atan2(s.vx, s.vz);
+          addRing(s.x, s.z, 0xffffff, 0.8);
+        } else {
+          dead = true;
+          if (e.shieldT <= 0) {
+            hurt(e, s.dmg, s.flash || 1);
+            if (s.push) { const sp = Math.hypot(s.vx, s.vz) || 1; knock(e, s.vx / sp, s.vz / sp, CFG.pusherKnock); addRing(e.x, e.z, 0xffffff, 1.3); }
+          }
+        }
+      }
+    }
+    if (dead) { scene.remove(s.m); lasers.splice(i, 1); } else s.m.position.set(s.x, CFG.robotH * 0.6, s.z);
+  }
 }
 
 // ---------- UI ----------
 const ui = {
-  energyNum: document.getElementById('energyNum'), energyRate: document.getElementById('energyRate'), energyIcon: document.getElementById('energyIcon'),
   hpYouNum: document.getElementById('hpYouNum'), hpBotNum: document.getElementById('hpBotNum'),
   hpYou: document.getElementById('hpYou'), hpBot: document.getElementById('hpBot'),
   overlay: document.getElementById('overlay'), title: document.getElementById('ovTitle'), sub: document.getElementById('ovSub')
@@ -1249,71 +1118,57 @@ function showOverlay(title, sub, color) {
 }
 let overlayShownAt = 0;
 ui.overlay.addEventListener('pointerup', () => {
-  if (performance.now() - overlayShownAt < 500) return;   // avoid accidental instant restart
+  if (performance.now() - overlayShownAt < 500) return;
   ui.overlay.classList.add('hidden');
   if (!match || match.done) startMatch(); else startDraft();
 });
 
 // ---------- Ability draft ----------
-// Add an entry here (plus its button and logic) to put a new ability in the draft pool.
+const cdText = id => CFG.cooldown[id] + 's';
 const ABILITIES = {
-  laser:  { name: 'Repeater',  weapon: true, how: 'DRAG TO AIM OR TAP', cost: CFG.laserCost, btn: 'btnLaser',
-            desc: `Fires a burst of ${CFG.laserShots} long-range shots, ${CFG.laserDamage} damage each.` },
-  flame:  { name: 'Flamer', weapon: true, how: 'HOLD AND DRAG', cost: CFG.flameCost + ' / sec', btn: 'btnFlame',
-            desc: `Sprays a continuous short-range flame for ${CFG.flameDps} damage per second. Energy does not recharge while you hold it.` },
-  slam:   { name: 'Slam',   how: 'TAP', cost: CFG.slamCost, btn: 'btnSlam',
-            desc: `Hops up and crashes down, dealing ${CFG.slamDamage} damage to an enemy close to the landing spot. Time it just before a collision.` },
-  shield: { name: 'Shield', how: 'TAP', cost: CFG.shieldCost, btn: 'btnShield',
-            desc: `Makes you invulnerable for ${CFG.shieldTime} seconds.` },
-  gatling: { name: 'Gatling', weapon: true, how: 'HOLD AND DRAG', cost: CFG.gatlingCost + ' / shot', btn: 'btnGatling',
-            desc: `Streams ${CFG.gatlingRate} bullets per second with unlimited range, ${CFG.gatlingDamage} damage each. Energy does not recharge while you hold it.` },
-  mine:   { name: 'Mine', how: 'TAP', cost: CFG.mineCost, btn: 'btnMine',
-            desc: `Drops a mine where you are. It arms after ${CFG.mineArm} second and deals ${CFG.mineDamage} damage when the enemy rolls over it, and slows it by ${Math.round((1 - CFG.mineSlow) * 100)}% for ${CFG.mineSlowTime} seconds.` },
-  shotgun: { name: 'Shotgun', weapon: true, how: 'TAP', cost: CFG.shotgunCost, btn: 'btnShotgun',
-            desc: `Fires a fan of ${CFG.shotgunPellets} pellets, ${CFG.shotgunDamage} damage each, at where the enemy is right now. Devastating up close, mostly misses from far away.` },
-  pusher: { name: 'Pusher', weapon: true, how: 'TAP', cost: CFG.pusherCost, btn: 'btnPusher',
-            desc: `Fires a fast shot at where the enemy is right now for ${CFG.pusherDamage} damage and knocks it onto a new course. A head-on hit sends it straight back; a side hit shoves it sideways. Use it to keep close-range weapons away.` },
-  hook:   { name: 'Hook', weapon: true, how: 'TAP', cost: CFG.hookCost, btn: 'btnHook',
-            desc: `Throws a hook on a rope. If it lands, the enemy takes ${CFG.hookDamage} damage and is turned to head straight at you. Pairs with Slam, Flamer, Shotgun, Spikes and Mines.` },
-  pistol: { name: 'Pistol', weapon: true, how: 'TAP', cost: CFG.pistolCost, btn: 'btnPistol',
-            desc: `Fires one auto-aimed shot for ${CFG.pistolDamage} damage. Hits hard, but has a long ${CFG.cooldown.pistol}s cooldown, so use it to support your main weapon.` },
-  rail:   { name: 'Railgun', weapon: true, how: 'TAP', cost: CFG.railCost, btn: 'btnRail',
-            desc: `Fires one extremely fast shot for ${CFG.railDamage} damage. It almost never misses, which is why it costs so much. Good for finishing a fight.` },
-  turret: { name: 'Turret', weapon: true, how: 'TAP', cost: CFG.turretCost, btn: 'btnTurret',
-            desc: `Drops a turret where you are. For ${CFG.turretLife} seconds it shoots at the enemy on its own, ${CFG.turretDamage} damage per hit. It is solid: robots bounce off it and it blocks shots.` },
-  spikes: { name: 'Spikes', how: 'PASSIVE', cost: null, btn: null,
-            desc: `Every time the two robots bump into each other, the enemy takes ${CFG.spikesDamage} damage. Always on, nothing to press.` },
-  ricochet: { name: 'Ricochet', how: 'PASSIVE', cost: null, btn: null,
-            desc: `Your shots bounce off walls ${CFG.ricochetBounces} times before disappearing. Works for every weapon that fires projectiles, and for turrets; does nothing for Flamer, Mortar or Slam.` },
-  armor:  { name: 'Armor', how: 'PASSIVE', cost: null, btn: null,
-            desc: `Every hit against you does ${CFG.armorReduce} less damage. Strongest against many small hits. Always on, nothing to press.` },
-  deflector: { name: 'Deflector', how: 'PASSIVE', cost: null, btn: null,
-            desc: `Each shot that hits you has a ${Math.round(CFG.deflectChance * 100)}% chance to bounce off and do no damage. Works on every projectile, not on Flamer, Mortar or Slam. Always on.` },
-  speed:  { name: 'Move Speed', how: 'PASSIVE', cost: null, btn: null,
-            desc: `Your robot moves ${Math.round(CFG.speedBonus * 100)}% faster. Harder to hit with slow weapons, and you close distance sooner. Always on.` },
-  reactor: { name: 'Reactor', how: 'PASSIVE', cost: null, btn: null,
-            desc: `Your energy recharges ${Math.round(CFG.reactorBonus * 100)}% faster. Stacks, and can be picked every round. Always on, nothing to press.` },
-  durability: { name: 'Durability', how: 'PASSIVE', cost: null, btn: null,     // passive: no button, no energy
-            desc: `Adds ${Math.round(CFG.durabilityBonus * 100)}% HP for the whole match (${CFG.maxHp} → ${Math.round(CFG.maxHp * (1 + CFG.durabilityBonus))}). Always on, nothing to press.` },
-  mortar: { name: 'Mortar', weapon: true, how: 'DRAG TO AIM OR TAP', cost: CFG.mortarCost, btn: 'btnMortar',
-            desc: `Lobs a slow shell that explodes where it lands for ${CFG.mortarDamage} damage in an area. Pull further to throw further.` }
+  laser:  { name: 'Repeater', nature: 'weapon', btn: 'btnLaser',
+            desc: `Fires one bolt at where the enemy is right now. After ${CFG.laserSplit} units it splits into ${CFG.laserLanes} bolts side by side, ${CFG.laserDamage} damage each. One hit up close, several from a distance.` },
+  flame:  { name: 'Flamer', nature: 'weapon', btn: 'btnFlame',
+            desc: `When the enemy gets close, sprays flame for the full ${CFG.flameDuration} seconds, even if the enemy moves away, at ${CFG.flameDps} damage per second. Very short range.` },
+  slam:   { name: 'Slam', nature: 'weapon', btn: 'btnSlam',
+            desc: `Hops and crashes down when the enemy is about to be under you: ${CFG.slamDamage} damage and a knockback.` },
+  shield: { name: 'Shield', nature: 'enhancement', btn: 'btnShield',
+            desc: `Raises itself for ${CFG.shieldTime} seconds when a big hit is about to land. Long cooldown.` },
+  gatling: { name: 'Gatling', nature: 'weapon', btn: 'btnGatling',
+            desc: `Streams ${CFG.gatlingRate} bullets per second for ${CFG.gatlingDuration} seconds, ${CFG.gatlingDamage} damage each, whenever the enemy is in range.` },
+  mine:   { name: 'Mine', nature: 'deployable', btn: 'btnMine',
+            desc: `Drops a mine under you when the enemy is near (up to ${CFG.mineMax} at once). ${CFG.mineDamage} damage and a ${Math.round((1 - CFG.mineSlow) * 100)}% slow when the enemy rolls over it.` },
+  shotgun: { name: 'Shotgun', nature: 'weapon', btn: 'btnShotgun',
+            desc: `Fires a fan of ${CFG.shotgunPellets} pellets, ${CFG.shotgunDamage} damage each, when the enemy is close. Devastating up close.` },
+  pusher: { name: 'Pusher', nature: 'weapon', btn: 'btnPusher',
+            desc: `Fires a fast shot for ${CFG.pusherDamage} damage that knocks the enemy away. Keeps close-range weapons off you.` },
+  hook:   { name: 'Hook', nature: 'weapon', btn: 'btnHook',
+            desc: `Throws a hook at an enemy a few steps away: ${CFG.hookDamage} damage and drags it toward you. Pairs with Flamer, Shotgun, Slam and Spikes.` },
+  pistol: { name: 'Pistol', nature: 'weapon', btn: 'btnPistol',
+            desc: `A cheap auto-aimed shot for ${CFG.pistolDamage} damage that comes back quickly. Fills the gaps between your other weapons.` },
+  rail:   { name: 'Railgun', nature: 'weapon', btn: 'btnRail',
+            desc: `Fires one extremely fast shot for ${CFG.railDamage} damage from far away. It almost never misses.` },
+  turret: { name: 'Turret', nature: 'deployable', btn: 'btnTurret',
+            desc: `Drops a turret under you when the enemy is within range. For ${CFG.turretLife} seconds it shoots on its own, ${CFG.turretDamage} damage per hit. Solid: blocks robots and shots.` },
+  spikes: { name: 'Spikes', nature: 'enhancement', btn: null,
+            desc: `Touching the enemy hurts it for ${CFG.spikesDamage} damage (at most every ${CFG.spikesInterval} seconds). Always on.` },
+  ricochet: { name: 'Ricochet', nature: 'enhancement', btn: null,
+            desc: `Your shots bounce off walls ${CFG.ricochetBounces} times before disappearing. Works for projectiles and turrets, not Flamer, Mortar or Slam.` },
+  armor:  { name: 'Armor', nature: 'enhancement', btn: null,
+            desc: `Every hit against you does ${CFG.armorReduce} less damage. Strongest against many small hits. Always on.` },
+  deflector: { name: 'Deflector', nature: 'enhancement', btn: null,
+            desc: `Each shot that hits you has a ${Math.round(CFG.deflectChance * 100)}% chance to bounce off for no damage. Always on.` },
+  speed:  { name: 'Move Speed', nature: 'enhancement', btn: null,
+            desc: `Your robot moves ${Math.round(CFG.speedBonus * 100)}% faster: easier to kite, to catch, and to dodge. Stacks: you can take it again in later rounds. Always on.` },
+  overclock: { name: 'Overclock', nature: 'enhancement', btn: null,
+            desc: `All your abilities recharge ${Math.round(CFG.overclockBonus * 100)}% faster. Stacks: you can take it again in later rounds. Always on.` },
+  durability: { name: 'Durability', nature: 'enhancement', btn: null,
+            desc: `Adds ${Math.round(CFG.durabilityBonus * 100)}% HP for the whole match (${CFG.maxHp} → ${Math.round(CFG.maxHp * (1 + CFG.durabilityBonus))}). Stacks: you can take it again in later rounds. Always on.` },
+  mortar: { name: 'Mortar', nature: 'weapon', btn: 'btnMortar',
+            desc: `Lobs a slow shell at where the enemy is right now (no lead): ${CFG.mortarDamage} damage in an area. Needs the enemy at a distance.` }
 };
-for (const id in ABILITIES) if (ABILITIES[id].btn) document.getElementById(ABILITIES[id].btn).style.display = 'none';   // shown after the draft
-// Nature (what kind of thing it is), short control type, and the number shown on the card's energy badge
+for (const id in ABILITIES) { const a = ABILITIES[id]; a.type = a.btn ? 'AUTO' : 'PASSIVE'; a.cd = a.btn ? CFG.cooldown[id] : null; if (a.btn) document.getElementById(a.btn).style.display = 'none'; }
 const NATURE = { weapon: 'WEAPON', enhancement: 'ENHANCEMENT', deployable: 'DEPLOYABLE' };
-const CARD = {
-  laser: ['weapon', 'AIM', CFG.laserCost, ''],        flame: ['weapon', 'HOLD', CFG.flameCost, '/s'],
-  slam: ['weapon', 'TAP', CFG.slamCost, ''],          gatling: ['weapon', 'HOLD', CFG.gatlingCost, '/shot'],
-  mortar: ['weapon', 'AIM', CFG.mortarCost, ''],      shield: ['enhancement', 'TAP', CFG.shieldCost, ''],
-  spikes: ['enhancement', 'PASSIVE', null, ''],       ricochet: ['enhancement', 'PASSIVE', null, ''],
-  deflector: ['enhancement', 'PASSIVE', null, ''],    speed: ['enhancement', 'PASSIVE', null, ''],
-  armor: ['enhancement', 'PASSIVE', null, ''],        reactor: ['enhancement', 'PASSIVE', null, ''],
-  durability: ['enhancement', 'PASSIVE', null, ''],   mine: ['deployable', 'TAP', CFG.mineCost, ''],
-  turret: ['deployable', 'TAP', CFG.turretCost, ''],  rail: ['weapon', 'TAP', CFG.railCost, ''], pistol: ['weapon', 'TAP', CFG.pistolCost, ''],          shotgun: ['weapon', 'TAP', CFG.shotgunCost, ''],
-  pusher: ['weapon', 'TAP', CFG.pusherCost, ''],      hook: ['weapon', 'TAP', CFG.hookCost, '']
-};
-for (const id in CARD) { const a = ABILITIES[id]; [a.nature, a.type, a.costNum, a.costUnit] = CARD[id]; }
-// Simple line-art icons (48x48, white on the card's colour)
 const starPts = (n, R, r) => Array.from({ length: n * 2 }, (_, i) => {
   const a = i * Math.PI / n - Math.PI / 2, q = i % 2 ? r : R; return (24 + Math.cos(a) * q).toFixed(1) + ',' + (24 + Math.sin(a) * q).toFixed(1); }).join(' ');
 const ICON = {
@@ -1335,48 +1190,48 @@ const ICON = {
   deflector: '<circle cx="17" cy="30" r="11" fill="rgba(255,255,255,.3)"/><path d="M43 33L29 25 39 8"/><path d="M31 8h8v8" stroke-width="3.5"/>',
   speed: '<path d="M8 11l13 13-13 13M25 11l13 13-13 13" stroke-width="5"/>',
   armor: '<polygon fill="rgba(255,255,255,.3)" points="24,5 40,14 40,34 24,43 8,34 8,14"/><polygon fill="#fff" stroke="none" points="24,15 32,19.5 32,28.5 24,33 16,28.5 16,19.5"/>',
-  reactor: '<ellipse cx="24" cy="24" rx="19" ry="8" transform="rotate(35 24 24)" stroke-width="3"/><ellipse cx="24" cy="24" rx="19" ry="8" transform="rotate(-35 24 24)" stroke-width="3"/><circle cx="24" cy="24" r="4.5" fill="#fff" stroke="none"/>',
+  overclock: '<ellipse cx="24" cy="24" rx="19" ry="8" transform="rotate(35 24 24)" stroke-width="3"/><ellipse cx="24" cy="24" rx="19" ry="8" transform="rotate(-35 24 24)" stroke-width="3"/><circle cx="24" cy="24" r="4.5" fill="#fff" stroke="none"/>',
   durability: '<path fill="rgba(255,255,255,.3)" d="M24 41C9 30 6 20 13 13c5-4 11-1 11 4 0-5 6-8 11-4 7 7 4 17-11 28z"/><path d="M24 18v12M18 24h12" stroke-width="4"/>'
 };
 const svgIcon = id => `<svg viewBox="0 0 48 48" fill="none" stroke="#fff" stroke-width="4" stroke-linecap="round" stroke-linejoin="round">${ICON[id]}</svg>`;
-
-const BOLT = '<svg viewBox="0 0 10 14"><path fill="#fff" d="M6.5 0L0 8h4l-1 6 7-8.5H5.5z"/></svg>';
 const robotSVG = (c1, c2) => `<svg viewBox="0 0 56 46"><ellipse cx="28" cy="40" rx="24" ry="5" fill="rgba(30,45,70,.15)"/>` +
   `<path fill="${c2}" d="M4 17v12c0 7 11 12 24 12s24-5 24-12V17z"/><ellipse cx="28" cy="17" rx="24" ry="12" fill="${c1}"/>` +
   `<ellipse cx="28" cy="16" rx="13" ry="6.5" fill="#fff"/></svg>`;
 document.getElementById('avBot').innerHTML = robotSVG('#f0443e', '#c2302b');
 document.getElementById('avYou').innerHTML = robotSVG('#2f7df6', '#1f5fd0');
-// Ability buttons show the same icon and colour as the cards
+// Cooldown buttons: icon, nature colour, total cooldown pill, and a countdown while recharging
+const btns = {};
 for (const id in ABILITIES) {
   const a = ABILITIES[id]; if (!a.btn) continue;
   const el = document.getElementById(a.btn);
   el.classList.add('n-' + a.nature);
-  el.querySelector('.knob').innerHTML = svgIcon(id) + `<span>${a.name.toUpperCase()}</span>`;
-  el.insertAdjacentHTML('beforeend', `<span class="cost">${BOLT}${a.costNum}<small>${a.costUnit}</small></span>`);
+  const knob = el.querySelector('.knob'); knob.innerHTML = svgIcon(id);
+  el.insertAdjacentHTML('beforeend', `<span class="left"></span><span class="cd">${cdText(id)}</span>`);
+  btns[id] = { el, knob, left: el.querySelector('.left'), lastCd: 0, lastTxt: '' };
 }
 const isPassive = id => !ABILITIES[id].btn;
 const miniIcon = id => `<span class="mini n-${ABILITIES[id].nature}">${svgIcon(id)}</span>`;
 const pipsHTML = n => Array.from({ length: CFG.roundsToWin }, (_, i) => `<i class="${i < n ? 'on' : ''}"></i>`).join('');
 
 // ---------- Match: rounds of (draft one ability each, then fight); first to CFG.roundsToWin wins ----------
-let match = null;      // { round, wins:{you,bot}, owned:{id: 'you'|'bot'}, lastLoser, done }
-let draft = null;      // { order:[first, second], i, options:[ids] }
+let match = null;
+let draft = null;
 const dui = { root: document.getElementById('draft'), cards: document.getElementById('cards'),
   title: document.getElementById('draftTitle'), goal: document.getElementById('draftGoal'), status: document.getElementById('draftStatus') };
-const ownedBy = who => Object.keys(match.owned).filter(id => match.owned[id] === who).concat(Array(match.reactors[who]).fill('reactor'));
+const ownedBy = who => Object.keys(match.owned).filter(id => match.owned[id] === who)
+  .concat(CFG.stackable.flatMap(id => Array(match.stacks[who][id]).fill(id)));
 function startMatch() {
-  match = { round: 1, wins: { you: 0, bot: 0 }, owned: {}, reactors: { you: 0, bot: 0 }, lastLoser: null, done: false };
+  match = { round: 1, wins: { you: 0, bot: 0 }, owned: {}, stacks: { you: { overclock: 0, speed: 0, durability: 0 }, bot: { overclock: 0, speed: 0, durability: 0 } }, firstPicker: null, done: false };
   startDraft();
 }
-// Score pips, round label and both loadouts, in the fight HUD and on the draft screen
 function renderMatchUI() {
   const you = ownedBy('you'), bt = ownedBy('bot');
   document.getElementById('dPipsYou').innerHTML = pipsHTML(match.wins.you);
-  document.getElementById('pipsYou').textContent = match.wins.you;      // fight HUD: plain numbers, pips would not fit beside long loadouts
+  document.getElementById('pipsYou').textContent = match.wins.you;
   document.getElementById('dPipsBot').innerHTML = pipsHTML(match.wins.bot);
   document.getElementById('pipsBot').textContent = match.wins.bot;
   document.getElementById('roundLbl').textContent = 'ROUND ' + match.round;
-  document.getElementById('loadYou').innerHTML = you.filter(isPassive).map(miniIcon).join('');   // actives are the buttons
+  document.getElementById('loadYou').innerHTML = you.filter(isPassive).map(miniIcon).join('');
   document.getElementById('loadBot').innerHTML = bt.map(miniIcon).join('');
   const none = '<span class="none">no abilities yet</span>';
   document.getElementById('dLoadYou').innerHTML = you.map(miniIcon).join('') || none;
@@ -1384,20 +1239,15 @@ function renderMatchUI() {
   for (const [id, n] of [['loadYou', you.filter(isPassive).length], ['loadBot', bt.length], ['dLoadYou', you.length], ['dLoadBot', bt.length]])
     document.getElementById(id).classList.toggle('many', n > (id[0] === 'd' ? 6 : 4));
 }
-const typeLabel = a => noAim && a.type === 'AIM' ? 'TAP' : a.type;   // in NoAiming nothing is aimed
 function startDraft() {
   state = 'draft';
-  // Offer a few random cards nobody owns yet. Round 1 offers only weapons and deployables, so nobody can start without a way to fight.
-  let pool = Object.keys(ABILITIES).filter(id => !match.owned[id] && id !== 'reactor');
+  let pool = Object.keys(ABILITIES).filter(id => !match.owned[id] || CFG.stackable.includes(id));   // stackables stay in the pool even after someone owns one
   if (match.round === 1) pool = pool.filter(id => ABILITIES[id].nature !== 'enhancement' && !CFG.notInRound1.includes(id));
   for (let i = pool.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [pool[i], pool[j]] = [pool[j], pool[i]]; }
   const options = pool.slice(0, CFG.draftOptions);
-  if (match.round > 1) options.push('reactor');     // Reactor: always offered as an extra card after round 1, and both sides can take it every time
-  // Round 1: coin flip. After that the loser of the previous round picks first.
-  // First pick alternates every round (random in round 1)
   if (!match.firstPicker) match.firstPicker = Math.random() < 0.5 ? 'you' : 'bot'; else match.firstPicker = match.firstPicker === 'you' ? 'bot' : 'you';
   const first = match.firstPicker;
-  draft = { order: [first, first === 'you' ? 'bot' : 'you'], i: 0, options, rx: new Set() };
+  draft = { order: [first, first === 'you' ? 'bot' : 'you'], i: 0, options, taken: new Set() };
   dui.title.textContent = 'ROUND ' + match.round;
   dui.goal.textContent = 'FIRST TO ' + CFG.roundsToWin;
   dui.cards.innerHTML = '';
@@ -1405,41 +1255,31 @@ function startDraft() {
     const a = ABILITIES[id], c = document.createElement('div');
     c.className = 'card n-' + a.nature; c.dataset.id = id;
     c.innerHTML = '<span class="owner"></span>' +
-      (a.costNum != null ? `<span class="badge">${a.costNum}<small>${a.costUnit}</small></span>` : '') +
-      (CFG.cooldown[id] > CFG.baseCooldown ? `<span class="cdchip">⏱ ${CFG.cooldown[id]}s</span>` : '') +
+      (a.cd != null ? `<span class="badge">⏱ ${a.cd}<small>s</small></span>` : '') +
       `<div class="art">${svgIcon(id)}</div><div class="name">${a.name}</div>` +
-      `<div class="tags"><span class="chip nat">${NATURE[a.nature]}</span><span class="chip typ">${typeLabel(a)}</span></div>` +
+      `<div class="tags"><span class="chip nat">${NATURE[a.nature]}</span><span class="chip typ">${a.type}</span></div>` +
       `<div class="desc">${a.desc}</div>`;
-    c.addEventListener('click', () => { if (draft && draft.order[draft.i] === 'you') draftPick('you', id); });   // one tap picks
+    c.addEventListener('click', () => { if (draft && draft.order[draft.i] === 'you') draftPick('you', id); });
     dui.cards.appendChild(c);
   }
   renderMatchUI();
   dui.root.classList.remove('hidden');
   draftNext();
 }
-// A card is pickable if nobody owns it; Reactor is pickable once per side per draft
-const pickable = (id, who) => id === 'reactor' ? !draft.rx.has(who) : !match.owned[id];
+const pickable = id => !draft.taken.has(id);       // every card goes to one side only, stackable or not
 function draftPick(who, id) {
-  if (!pickable(id, who) || draft.order[draft.i] !== who) return;
+  if (!pickable(id) || draft.order[draft.i] !== who) return;
   const c = dui.cards.querySelector(`[data-id="${id}"]`);
-  if (id === 'reactor') {
-    match.reactors[who]++; draft.rx.add(who);
-    c.classList.add(who === 'you' ? 'mine' : 'theirs');
-    if (draft.rx.size > 1) c.classList.add('taken');       // both sides took it: grey it out
-    c.querySelector('.owner').textContent = draft.rx.size > 1 ? 'BOTH' : who === 'you' ? 'YOU' : 'BOT';
-    c.classList.toggle('mine', draft.rx.size === 1 && who === 'you'); c.classList.toggle('theirs', draft.rx.size === 1 && who === 'bot');
-    c.querySelector('.owner').style.display = 'block';
-  } else {
-    match.owned[id] = who;
-    c.classList.add('taken', who === 'you' ? 'mine' : 'theirs');
-    c.querySelector('.owner').textContent = who === 'you' ? 'YOU' : 'BOT';
-  }
+  draft.taken.add(id);
+  if (CFG.stackable.includes(id)) match.stacks[who][id]++; else match.owned[id] = who;
+  c.classList.add('taken', who === 'you' ? 'mine' : 'theirs');
+  c.querySelector('.owner').textContent = who === 'you' ? 'YOU' : 'BOT';
   draft.i++;
   renderMatchUI();
   draftNext();
 }
 function draftNext() {
-  const d = draft, who = d.order[d.i], left = d.options.filter(id => pickable(id, who));
+  const d = draft, who = d.order[d.i], left = d.options.filter(id => pickable(id));
   dui.cards.classList.toggle('myturn', who === 'you');
   dui.root.querySelector('.side.you').classList.toggle('turn', who === 'you');
   dui.root.querySelector('.side.bot').classList.toggle('turn', who === 'bot');
@@ -1450,26 +1290,24 @@ function draftNext() {
   } else dui.status.textContent = d.i === 0 ? 'You pick first: tap a card' : 'Your pick: tap a card';
 }
 function endDraft() {
-  for (const r of robots) { const w = r.isPlayer ? 'you' : 'bot'; r.abilities = new Set(ownedBy(w)); r.reactors = match.reactors[w]; }
+  for (const r of robots) { const w = r.isPlayer ? 'you' : 'bot'; r.abilities = new Set(ownedBy(w)); r.stacks = match.stacks[w]; }
   for (const id in ABILITIES) if (ABILITIES[id].btn) document.getElementById(ABILITIES[id].btn).style.display = player.abilities.has(id) ? 'flex' : 'none';
   draft = null; dui.root.classList.add('hidden');
   layoutButtons();
   reset(); state = 'playing';
 }
-// Buttons grow to use the row: few abilities = big buttons, five abilities = smaller ones
 function layoutButtons() {
   const row = document.getElementById('controls'), n = Math.max(1, [...player.abilities].filter(id => ABILITIES[id].btn).length);
-  const size = Math.max(34, Math.min(84, Math.floor(document.getElementById('btnRow').clientWidth / n) - 6));
+  const size = Math.max(34, Math.min(56, Math.floor((document.getElementById('btnRow').clientWidth || 300) / n) - 8));
   row.style.setProperty('--bs', size + 'px');
-  row.classList.toggle('tiny', size < 48);          // too small for a readable name: icon only
+  placeJoy();
 }
 window.addEventListener('resize', layoutButtons);
-// A fight ended: score it, then either the next round's draft or the end of the match
 function endRound(winner, now) {
   state = 'over'; overlayShownAt = now;
-  player.thrusting = bot.thrusting = false;
-  player.firing = bot.firing = false;
-  match.wins[winner]++; match.lastLoser = winner === 'you' ? 'bot' : 'you';
+  for (const r of robots) { r.firing = false; r.gunHot = false; }
+  joy.id = null; joy.x = joy.z = 0; joyEl.classList.remove('on'); placeJoy();
+  match.wins[winner]++;
   const score = `YOU ${match.wins.you} – ${match.wins.bot} BOT`, col = winner === 'you' ? '#2f7df6' : '#f0443e';
   if (match.wins[winner] >= CFG.roundsToWin) {
     match.done = true; renderMatchUI();
@@ -1480,104 +1318,56 @@ function endRound(winner, now) {
   }
 }
 
-const UP = new THREE.Vector3(0, 1, 0), tmpV = new THREE.Vector3();
+function setBtn(id, active) {
+  const b = btns[id], cd = player.cdl[id] || 0;
+  b.el.classList.toggle('dim', cd > 0);
+  b.knob.style.setProperty('--p', cd > 0 ? (1 - cd / CFG.cooldown[id]).toFixed(3) : 1);
+  const txt = cd > 0 ? Math.ceil(cd) : '';
+  if (b.lastTxt !== String(txt)) { b.left.textContent = txt; b.lastTxt = String(txt); }
+  b.el.classList.toggle('pressed', !!active || cd > b.lastCd + 0.01);     // lights up while firing and when it just fired
+  b.lastCd = cd;
+}
 function syncVisuals(time) {
   for (const r of robots) {
     r.mesh.position.set(r.x, CFG.robotH / 2 + r.y, r.z);
     r.mat.emissive.setScalar(r.flash * 0.8);
     r.slowRing.visible = r.slowT > 0 && (r.slowT > 0.6 || Math.sin(time * 40) > 0);
-    r.shield.visible = r.shieldT > 0 && (r.shieldT > 0.6 || Math.sin(time * 40) > 0);   // blinks before it drops
-    r.flame.visible = r.thrusting;
-    if (r.thrusting) {
-      const l = Math.hypot(r.thrust.x, r.thrust.z) || 1, ex = -r.thrust.x / l, ez = -r.thrust.z / l; // exhaust direction
-      const len = (0.7 + 0.3 * Math.sin(time * 40)) * (0.5 + 0.5 * r.thrust.mag);
-      r.flame.scale.set(1, len, 1);
-      r.flame.position.set(r.x + ex * (CFG.robotR + 0.45 * len), CFG.robotH / 2, r.z + ez * (CFG.robotR + 0.45 * len));
-      r.flame.quaternion.setFromUnitVectors(UP, tmpV.set(ex, 0, ez));
-    }
+    r.shield.visible = r.shieldT > 0 && (r.shieldT > 0.6 || Math.sin(time * 40) > 0);
   }
-  // Laser aim preview
-  aimLine.visible = state === 'playing' && laserStick.held && laserStick.mag > 0;
-  if (aimLine.visible) { aimLine.position.x = player.x; aimLine.position.z = player.z; aimLine.rotation.y = Math.atan2(laserStick.x, laserStick.y); }
-  // Flamer aim preview (no drag = auto-aim, so it points at the bot)
-  flameAim.visible = state === 'playing' && flameStick.held;
-  if (flameAim.visible) {
-    let fx = flameStick.x, fz = flameStick.y;
-    if (flameStick.mag <= 0) { fx = bot.x - player.x; fz = bot.z - player.z; }
-    flameAim.position.x = player.x; flameAim.position.z = player.z; flameAim.rotation.y = Math.atan2(-fz, fx);
-  }
-  // HUD + buttons
   ui.hpYou.style.width = (player.hp / player.maxHp * 100) + '%';
   ui.hpBot.style.width = (bot.hp / bot.maxHp * 100) + '%';
   ui.hpYouNum.textContent = Math.ceil(player.hp);
   ui.hpBotNum.textContent = Math.ceil(bot.hp);
-  const eWhole = Math.floor(player.energy + 1e-6);
-  if (ui.energyNum.textContent !== String(eWhole)) ui.energyNum.textContent = eWhole;
-  const ePaused = player.firing || (player.gunOn && !player.gunDry && ready(player, 'gatling'));
-  const eRate = '+' + +(ePaused ? 0 : CFG.energyRegen * (1 + CFG.reactorBonus * (player.reactors || 0))).toFixed(2) + '/s';
-  if (ui.energyRate.textContent !== eRate) ui.energyRate.textContent = eRate;
-  ui.energyIcon.style.setProperty('--f', (player.energy - eWhole).toFixed(2));    // progress toward the next point
-  // Buttons: grey when unusable; while on cooldown the ring refills to show the time left
-  const setBtn = (b, id, blocked) => {
-    const cd = player.cdl[id] || 0;
-    b.el.classList.toggle('dim', blocked || cd > 0);
-    b.knob.style.setProperty('--p', cd > 0 ? (1 - cd / CFG.cooldown[id]).toFixed(3) : blocked ? 0 : 1);
-  };
-  setBtn(laserStick, 'laser', player.energy < CFG.laserCost || !!player.burst);
-  setBtn(flameStick, 'flame', !player.firing && (player.fireDry || player.energy < CFG.flameMinStart));
-  setBtn(slamBtn, 'slam', player.energy < CFG.slamCost || player.slamCd > 0);
-  setBtn(shieldBtn, 'shield', player.energy < CFG.shieldCost);
-  setBtn(mortarStick, 'mortar', player.energy < CFG.mortarCost);
-  setBtn(mineBtn, 'mine', player.energy < CFG.mineCost);
-  setBtn(turretBtn, 'turret', player.energy < CFG.turretCost);
-  setBtn(pistolBtn, 'pistol', player.energy < CFG.pistolCost);
-  setBtn(railBtn, 'rail', player.energy < CFG.railCost);
-  setBtn(shotgunBtn, 'shotgun', player.energy < CFG.shotgunCost);
-  setBtn(pusherBtn, 'pusher', player.energy < CFG.pusherCost);
-  setBtn(hookBtn, 'hook', player.energy < CFG.hookCost);
-  setBtn(gatlingStick, 'gatling', player.gunDry || (!gatlingStick.held && player.energy < CFG.gatlingCost));
-  // Mortar aim preview: arc dots + blast zone at the landing point
-  const aimM = state === 'playing' && mortarStick.held && mortarStick.mag > 0;
-  aimDisc.visible = aimM;
-  if (aimM) {
-    const t = mortarTarget(player, mortarStick.x, mortarStick.y, mortarRange(mortarStick.mag));
-    aimDisc.position.x = t.x; aimDisc.position.z = t.z; aimDisc.scale.setScalar(CFG.mortarRadius);
-    arcDots.forEach((d, i) => { const k = (i + 1) / (arcDots.length + 1);
-      d.position.set(player.x + (t.x - player.x) * k, arcY(k), player.z + (t.z - player.z) * k); });
-  }
-  for (const d of arcDots) d.visible = aimM;
-  thrustStick.knob.style.setProperty('--p', player.charge.toFixed(3));
-  thrustStick.el.classList.toggle('dim', player.charge < CFG.thrustMinStart && !player.thrusting);
+  for (const id in btns) if (player.abilities.has(id))
+    setBtn(id, id === 'flame' ? player.firing : id === 'gatling' ? player.gunHot : id === 'slam' ? player.slamT >= 0 : id === 'shield' ? player.shieldT > 0 : false);
 }
 
 // ---------- Loop ----------
 let last = performance.now();
-function frame(now) {
-  const dt = Math.min(0.033, (now - last) / 1000); last = now;
+function simStep(dt, now) {
   if (state === 'playing') {
-    const sgn = CFG.thrustInvert ? -1 : 1;
-    player.thrust = CFG.thrustersEnabled && thrustStick.held && thrustStick.mag > 0
-      ? { x: thrustStick.x * sgn, z: thrustStick.y * sgn, mag: thrustStick.mag } : null;
-    player.fireOn = flameStick.held;
-    player.fireDir = flameStick.mag > 0 ? { x: flameStick.x, z: flameStick.y } : null;
-    player.gunOn = gatlingStick.held;
-    player.gunDir = gatlingStick.mag > 0 ? { x: gatlingStick.x, z: gatlingStick.y } : null;
-    botThink(dt);
-    stepRobot(player, dt); stepRobot(bot, dt);
+    const pin = playerInput(), bin = botInput(dt);
+    autoFire(player, dt); autoFire(bot, dt);
+    stepRobot(player, dt, pin.x, pin.z); stepRobot(bot, dt, bin.x, bin.z);
+    bumpT = Math.max(0, bumpT - dt);
     collideRobots(); collideTurrets();
     stepLasers(dt); stepHooks(dt); stepShells(dt); stepMines(dt, now / 1000); stepTurrets(dt, now / 1000);
     if (player.hp <= 0 || bot.hp <= 0) endRound(bot.hp <= 0 ? 'you' : 'bot', now);
   }
-  stepPuffs(dt); stepRings(dt);
+  stepPuffs(dt); stepRings(dt); stepWalls(dt);
+}
+function frame(now) {
+  const dt = Math.min(0.033, (now - last) / 1000); last = now;
+  simStep(dt, now);
   syncVisuals(now / 1000);
   renderer.render(scene, camera);
   requestAnimationFrame(frame);
 }
+fitCamera();
 reset();
 requestAnimationFrame(frame);
 
-// Debug handle for tuning from the console
-window.RoBotFight = { CFG, player, bot, lasers, get state() { return state; }, get draft() { return draft; }, hooks, get match() { return match; }, get noAim() { return noAim; }, mines, turrets, shells };
+window.RoBotFight = { CFG, player, bot, lasers, get state() { return state; }, get draft() { return draft; }, hooks, get match() { return match; }, mines, turrets, shells, walls, step: simStep, reset, setInput: f => { inputOverride = f; }, setBotInput: f => { botOverride = f; }, botFlags, ai };
 })();
 </script>
 </body>
